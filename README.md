@@ -14,7 +14,7 @@ This project structure will help you creating reproducible results in your stude
 The structure of your project should look something like this:
 
 ```
-├── README.md          <- The top-level README for for using and installing this project.
+├── README.md          <- The top-level README for using and installing this project.
 ├── data               <- The content of this folder is not tracked by git
 │   ├── interim        <- Intermediate data that has been cleaned up, transformed, ...
 │   ├── processed      <- The final data for modeling and visualizations.
