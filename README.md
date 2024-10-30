@@ -4,7 +4,7 @@ This project structure will help you creating reproducible results in your stude
 
 - A handout with general informations on writing a thesis with us is provided under `docs`
 - We provide a PowerPoint template for the final presentation under `presentation`.
-- The report latex template of KISMED can be downloaded from [ShareLatex (TU Darmstadt)](https://sharelatex.tu-darmstadt.de/project/6527b0f7022171036443f273). We highly recommend using ShareLatex for working on the report because it is easy to set-up.
+- The report latex template of KISMED can be downloaded from [ShareLatex (TU Darmstadt)](https://sharelatex.tu-darmstadt.de/read/jyndmxhrgygk#430ce9). We highly recommend using ShareLatex for working on the report because it is easy to set-up.
 
 > Please give a short desription of your project here
 
