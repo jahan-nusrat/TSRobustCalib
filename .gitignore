@@ -4,3 +4,5 @@ data/raw/*
 !data/interim/README.md
 !data/processed/README.md
 !data/raw/README.md
+**/__pycache__/
+**/runs/
