@@ -1,17 +1,12 @@
-# Template Folder Structure for Projects and Theses at KIS*MED
+# Project Title: Improving Robustness and Calibration of Neural Networks for Time Series Data
 
-This project structure will help you creating reproducible results in your student project / Bachelor or Master thesis. We will only accept your final submission of the project if it follows the structure outlined in this repository. The repository is created with python projects in mind. If your project uses another language or is more hardware oriented, your supervisior will guide you in making adjustments to the structure.
+This project focuses on improving the robustness and calibration of neural networks for time-series data, specifically for ECG signal classification. The goal is to develop and evaluate methods such as ensemble learning and Manifold Mixup to improve the reliability of predictions in real-world healthcare applications.
 
-- A handout with general informations on writing a thesis with us is provided under `docs`
-- We provide a PowerPoint template for the final presentation under `presentation`.
-- The report latex template of KISMED can be downloaded from [ShareLatex (TU Darmstadt)](https://sharelatex.tu-darmstadt.de/read/jyndmxhrgygk#430ce9). We highly recommend using ShareLatex for working on the report because it is easy to set-up.
+This repository follows a structured template to ensure reproducibility and organization, suitable for thesis projects at KIS\*MED.
 
-> Please give a short desription of your project here
+## Repository Structure
 
-## The directory structure
-> This paragraph is only for clarification of the template and should be deleted in a real project
-
-The structure of your project should look something like this:
+The structure of the project is organized as follows:
 
 ```
 ├── README.md          <- The top-level README for using and installing this project.
@@ -43,34 +38,58 @@ The structure of your project should look something like this:
     │
     ├── dataset.py              <- Scripts to download or generate data
     │
-    └── plots.py                <- Code to create visualizations   
+    └── plots.py                <- Code to create visualizations
 ```
 
 ## Installation
 
-> Put your installation instructions here. This should include versions of all Programs and Tools used. The following example is for a python project with name `project_name`.
+### Python Environment
+
+### 1. Clone the repository:
 
 The code is tested with Python Version 3.9. We recommend using Miniconda: [Installing Miniconda](https://docs.anaconda.com/miniconda/miniconda-install/)
 
 ```
-git clone <repo>
+gh repo clone jahan-nusrat/TSRobustCalib
 
-cd <repo>
-
-conda create -n <project_name> python=3.9
+cd jh_students
 ```
 
-Then install all necessary packages:
-`pip install -r requirements.txt`
+### 2. Create and activate a new Conda environment:
+
+```
+conda create -n ecg_project python=3.9
+
+conda activate ecg_project
+```
+
+### 3. Install required packages: `pip install -r requirements.txt`
 
 Or using setuptools install the project as package:
 `pip install -e .`
 
-> Advanced users may use Docker for reproducibility
-
 ## Usage
 
-> Put instructions on how to use your project code here. Best practice is to prepare a separate scripts for generating data and another script that creates plots and visualizations
+### 1. Place raw ECG datasets in the data/raw directory
 
-## Configuration Parameters
-> If your code is parameterized, you can explain the most important parameters here
+### 2. Use the preprocessing script to clean, transform, and segment the data:
+
+`python code_project_name/dataset.py`
+
+> The cleaned and processed data will be saved in `data/processed`
+
+## Training the Model
+
+Train the model using the following command:
+`python code_project_name/train.py --config config.yaml`
+
+> Modify the parameters in config.yaml to adjust training settings (e.g., learning rate, batch size, etc.).
+
+## Evaluation
+
+Evaluate the trained model on the test dataset:
+`python code_project_name/evaluate.py --model models/best_model.pth`
+
+## Visualization
+
+Generate plots for analysis and visualization: `python code_project_name/plots.py`
