@@ -43,6 +43,10 @@ def apply_notch_filter(data, fs, freq=50.0, Q=30.0):
     b, a = iirnotch(w0=freq / (fs / 2), Q=Q)
     return filtfilt(b, a, data, axis=-1)
 
+def augment_spectrograms(spectrograms, noise_factor=0.01):
+    noise = noise_factor * np.random.randn(*spectrograms.shape)
+    return spectrograms + noise
+
 def preprocess_signals(data, fs, target_fs=100, segment_length=2):
     """Resample, segment, normalize EEG data, and generate spectrograms."""
     # Resample to the target frequency
@@ -60,15 +64,15 @@ def preprocess_signals(data, fs, target_fs=100, segment_length=2):
     for segment in segments:
         _, _, Sxx = spectrogram(segment, fs=target_fs, nperseg=128)
         spectrograms.append(Sxx)
-    spectrograms = np.array(spectrograms)  # Shape: (n_segments, n_channels, freq_bins, time_bins)
+    spectrograms = np.array(spectrograms)
 
-    # Normalize spectrograms and ensure correct dimensions
-    spectrograms = np.array(spectrograms)  # Shape: (n_segments, n_channels, freq_bins, time_bins)
-    spectrograms = np.expand_dims(spectrograms, axis=1)  # Add channel dimension -> (n_segments, 1, freq_bins, time_bins)
+    # Normalize
     spectrograms = (spectrograms - spectrograms.mean(axis=(2, 3), keepdims=True)) / (
         spectrograms.std(axis=(2, 3), keepdims=True) + 1e-6
     )
 
+    # Apply augmentation
+    spectrograms = augment_spectrograms(spectrograms)
     return spectrograms
 
 def generate_labels(csv_path, n_segments, segment_length, fs):

@@ -72,6 +72,10 @@ class GenericTrainer():
                 json.dump(config_dict, outfile)
 
     def train(self, train_loader:torch.utils.data.DataLoader, val_loader:torch.utils.data.DataLoader|None=None) -> None:
+        best_val_accuracy = 0.0  # Track the best validation accuracy
+        patience = 10  # Number of epochs to wait for improvement
+        patience_counter = 0  # Track epochs without improvement
+
         scaler = GradScaler(device=self.device, enabled=self.fp16_precision)
         n_iter = 0
         n_metrics = len(self.metrics)
@@ -178,6 +182,7 @@ class GenericTrainer():
                     if(n_metrics > 0):
                         metrics = metrics / len(val_loader)
                         validation_metrics_tensor[epoch_counter, :] = metrics
+                        val_accuracy = metrics[0].item()
 
                     if(self.verbose):
                         logging.debug(f"Epoch: {epoch_counter}\tValidation Loss: {epoch_loss}")
@@ -188,6 +193,28 @@ class GenericTrainer():
                             self.writer.add_scalar(f'validation_epoch_{metric_name}', metrics[i], global_step=epoch_counter)
                             logging.debug(f"Epoch: {epoch_counter}\tValidation {metric_name}: {metrics[i]}")
                             print(f"Epoch: {epoch_counter}\tValidation {metric_name}: {metrics[i]}")
+                            
+                    # Check if validation accuracy improved
+                    if val_accuracy > best_val_accuracy:
+                        best_val_accuracy = val_accuracy
+                        patience_counter = 0
+
+                        # Save the best model checkpoint
+                        checkpoint_name = f"best_model_epoch_{epoch_counter}.pt"
+                        torch.save({
+                            'epoch': epoch_counter,
+                            'model_state_dict': self.model.state_dict(),
+                            'optimizer_state_dict': self.optimizer.state_dict(),
+                            'scheduler_state_dict': self.scheduler.state_dict(),
+                        }, os.path.join(self.writer.log_dir, checkpoint_name))
+                        print(f"New best model saved: {checkpoint_name}")
+                    else:
+                        patience_counter += 1  # Increment patience counter
+
+                    # Early stopping
+                    if patience_counter >= patience:
+                        print("Early stopping triggered.")
+                        break
                 
         if(self.verbose):
             logging.info("Training has finished.")

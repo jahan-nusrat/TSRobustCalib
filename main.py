@@ -29,13 +29,13 @@ model = EEGNet(n_classes=2)  # 2 classes: normal and seizure
 
 # Ensure data dimensions
 train_dataset = load_data("data/processed/train")  # Preprocessed spectrograms
-val_dataset = load_data("data/processed/dev")
+val_dataset = load_data("data/processed/eval")
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32)
 
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 # Training
 trainer = GenericTrainer(
@@ -49,7 +49,7 @@ trainer = GenericTrainer(
     fp16_precision=True,
     log_every_n_steps=10,
     save_every_n_epochs=5,
-    epochs=2,
+    epochs=20,
     seed=42,
     verbose=True,
     comment="Training EEGNet with spectrogram data"
