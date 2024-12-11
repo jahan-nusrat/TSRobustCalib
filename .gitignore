@@ -6,3 +6,7 @@ data/raw/*
 !data/raw/README.md
 **/__pycache__/
 **/runs/
+src/trainer.py
+src/tusz_utilities.py
+src/metrics.py
+src/training_example.ipynb
