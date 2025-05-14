@@ -1,0 +1,10 @@
+torch
+torchvision
+torchaudio
+numpy
+scipy
+pandas
+tqdm
+tensorboard
+mne
+sklearn
