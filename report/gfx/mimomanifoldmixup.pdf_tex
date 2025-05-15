@@ -1,0 +1,82 @@
+%% Creator: Inkscape 1.4 (86a8ad7, 2024-10-11), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'mimomanifoldmixup.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{380bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.291)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{mimomanifoldmixup.pdf}}%
+    \put(0.24080117,0.25619266){\color[rgb]{0,0,0}\transparent{0}\rotatebox{-180}{\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}...\end{tabular}}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{mimomanifoldmixup.pdf}}%
+    \put(0.22382907,0.21618699){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}X\textsubscript{1}\end{tabular}}}}%
+    \put(0.22358946,0.16727969){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}X\textsubscript{2}\end{tabular}}}}%
+    \put(0.22402164,0.12686789){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}X\textsubscript{3}\end{tabular}}}}%
+    \put(0.34291962,0.17096298){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Head specific\\7 x 7 \\convolutional \\layer\end{tabular}}}}%
+    \put(0.09818246,0.27627264){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}EEG Spectograms\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{mimomanifoldmixup.pdf}}%
+    \put(0.46640965,0.15555831){\color[rgb]{0,0,0}\rotatebox{90}{\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Shared ResNet-18 \\backbone\end{tabular}}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{mimomanifoldmixup.pdf}}%
+    \put(0.60347442,0.0916102){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Head specific\\FC\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{mimomanifoldmixup.pdf}}%
+    \put(0.60577219,0.16031541){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Mixed \\Representation\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{mimomanifoldmixup.pdf}}%
+    \put(0.60027522,0.24975924){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Manifold\\Mixup\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{mimomanifoldmixup.pdf}}%
+    \put(0.7805833,0.10655803){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Mixed specific\\FC\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{mimomanifoldmixup.pdf}}%
+    \put(0.77657183,0.02482798){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Loss\end{tabular}}}}%
+    \put(0.57930602,0.00810034){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}y\textsubscript{1}\end{tabular}}}}%
+    \put(0.6050407,0.00845698){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}y\textsubscript{2}\end{tabular}}}}%
+    \put(0.6291525,0.00810002){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}y\textsubscript{3}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{mimomanifoldmixup.pdf}}%
+    \put(0.94069892,0.13914341){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Average\\prediction\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

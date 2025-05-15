@@ -1,0 +1,89 @@
+%% Creator: Inkscape 1.4 (86a8ad7, 2024-10-11), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'mutihead.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{637.79527559bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.62222222)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{mutihead.pdf}}%
+    \put(0.09134544,0.39364031){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}SoftMax\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{mutihead.pdf}}%
+    \put(0.07206598,0.29791114){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Mask (opt.)\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{mutihead.pdf}}%
+    \put(0.10734634,0.19792084){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Scale\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{mutihead.pdf}}%
+    \put(0.09603146,0.10003347){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}MatMUl\end{tabular}}}}%
+    \put(0.1644966,0.49195265){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}MatMUl\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{mutihead.pdf}}%
+    \put(0.00258373,0.59651759){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Scaled Dot-Product Attention\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{mutihead.pdf}}%
+    \put(0.67317173,0.49246843){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Linear\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{mutihead.pdf}}%
+    \put(0.66977173,0.38980031){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Concat\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{mutihead.pdf}}%
+    \put(0.71244812,0.28941189){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Scaled Dot-Product \\Attention\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{mutihead.pdf}}%
+    \put(0.47949008,0.15625948){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Linear\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{mutihead.pdf}}%
+    \put(0.67317175,0.15625948){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Linear\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{mutihead.pdf}}%
+    \put(0.86685333,0.15625948){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Linear\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{mutihead.pdf}}%
+    \put(0.59159966,0.59651759){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Multi-Head Attention\end{tabular}}}}%
+    \put(0.07218301,0.00933512){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Q\end{tabular}}}}%
+    \put(0.16576177,0.0073371){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}K\end{tabular}}}}%
+    \put(0.26022917,0.0073371){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}V\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{mutihead.pdf}}%
+    \put(0.5078049,0.06251319){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}V\end{tabular}}}}%
+    \put(0.70037157,0.06251319){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}K\end{tabular}}}}%
+    \put(0.8938269,0.0668515){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Q\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

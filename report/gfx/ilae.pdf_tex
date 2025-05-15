@@ -1,0 +1,79 @@
+%% Creator: Inkscape 1.4 (86a8ad7, 2024-10-11), www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'ilae.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{396.8503937bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.42142857)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{ilae.pdf}}%
+    \put(0.15988736,0.3495067){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Focal Onset\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{ilae.pdf}}%
+    \put(0.83766877,0.35376891){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Unknown Onset\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{ilae.pdf}}%
+    \put(0.08343366,0.23671567){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Aware\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{ilae.pdf}}%
+    \put(0.23841163,0.25218758){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Impaired\\Awareness\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{ilae.pdf}}%
+    \put(0.16064236,0.14139068){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Motor Onset\\Nonmotor Onset\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{ilae.pdf}}%
+    \put(0.16329507,0.04651061){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Focal to Bilateral \\Tonic-Clonic\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{ilae.pdf}}%
+    \put(0.35469746,0.27290186){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Motor\\\\\\Nonmotor (Absence)\end{tabular}}}}%
+    \put(0.37773805,0.24832079){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Tonic-Clonic\\Other motor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{ilae.pdf}}%
+    \put(0.50102274,0.35376891){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Generalized Onset\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{ilae.pdf}}%
+    \put(0.83534178,0.12201206){\color[rgb]{0,0,0}\makebox(0,0)[t]{\lineheight{1.25}\smash{\begin{tabular}[t]{c}Unclassified\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{ilae.pdf}}%
+    \put(0.68995327,0.2731065){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Motor\\\\\\Nonmotor\end{tabular}}}}%
+    \put(0.71299386,0.24852543){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Tonic-Clonic\\Other motor\end{tabular}}}}%
+  \end{picture}%
+\endgroup%
