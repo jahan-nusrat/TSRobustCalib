@@ -1,3 +1,1 @@
-# Here goes the latex code of your theses
-
-Please use the KISMED template. 
+# Here goes the latex code of the thesis
