@@ -1,0 +1,671 @@
+
+%*****************************************
+\chapter{Methods}
+\label{ch:methodology}
+%*****************************************
+This chapter describes the experimental setup, including dataset preparation, corruption generation, and model training strategies. It details the methods used to benchmark robustness and calibration of EEG classification models under both clean and corrupted conditions. The chapter also outlines the evaluation metrics and training configurations used to compare the effectiveness of various robustness-enhancing techniques.
+
+\section{Dataset and Preprocessing}
+This work utilizes the Temple University Hospital Seizure Corpus (TUSZ), the largest publicly available EEG dataset for seizure detection research. TUSZ is widely adopted in the clinical and machine learning communities due to its scale, clinical authenticity, and comprehensive seizure annotations. The dataset consists of 19-channel scalp EEG recordings from 315 subjects, encompassing 1,791 annotated seizure events and over 797 hours of EEG recordings~\cite{seizureTUSZ}. Notably, TUSZ is the only publicly available corpus that includes multiple types of epileptic seizure events, making it uniquely suited for developing generalizable and clinically relevant detection models~\cite{seizureTUSZ}. The dataset exhibits a pronounced class imbalance, a common characteristic in clinical seizure corpora. Specifically, in the test set, only 5.55\% of EEG segments correspond to seizure events, with the remaining 94.45\% representing normal brain activity. This imbalance poses a significant challenge for neural network classifiers, as high accuracy can be trivially achieved by favoring the majority class, thus obscuring true model effectiveness. Understanding this imbalance is essential for interpreting performance metrics like precision, recall, and calibration under real-world conditions. Figure~\ref{fig:class_distribution} visualizes the class distribution in the TUSZ test set, providing essential context for the evaluation results reported in later sections.
+
+\begin{figure}[h]
+	\centering
+    \def\svgwidth{300pt}
+ 	\import{gfx/}{class_distribution.pdf_tex} 	 	
+	\caption[Class distribution of test set]{Class distribution of TUSZ test set.}
+	\label{fig:class_distribution}
+\end{figure}
+
+Accurate classification of EEG data depends critically on robust preprocessing to mitigate variability and noise inherent to real-world clinical recordings. This work implements a structured preprocessing pipeline to standardize the input representation while preserving the clinically meaningful characteristics of the EEG. The pipeline consists of the following steps: montage extraction, notch filtering, resampling, segmentation, and spectrogram computation. An overview of these preprocessing stages is illustrated in Figure~\ref{fig:pipeline}, using a representative EEG channel.
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{430pt}
+    \fontsize{7pt}{7pt}
+ 	\import{gfx/}{preprocessing_pipeline_final.pdf_tex} 	 	
+	\caption[Preprocessing pipeline for EEG signals]{Visualization of the preprocessing pipeline for a single EEG channel. Top to bottom: the raw bipolar signal, the signal after 60 Hz notch filtering, the resampled signal at 200 Hz, and the resulting time-frequency spectrogram. This pipeline transforms raw EEG into spectrally and temporally standardized input for downstream modeling.}
+	\label{fig:pipeline}
+\end{figure}
+\subsubsection{Montage extraction}
+EEG signals in the TUSZ corpus are recorded using heterogeneous reference schemes and channel configurations, leading to significant inter-subject and inter-session variability. To standardize input representations and reduce artifacts introduced by reference electrodes, this work converts all EEG recordings to a consistent bipolar montage. In this configuration, each signal is computed as the voltage difference between two predefined electrode pairs, which enhances the detection of localized brain activity and minimizes bias from reference placement~\cite{seizureTUSZ}. This preprocessing step ensures compatibility across recordings and preserves neurophysiologically meaningful signal characteristics for downstream analysis.
+
+The electrode configuration is based on the International 10–20 system, which is widely used in clinical neurophysiology. After evaluating common EEG montages and based on guidelines from~\cite{tuszChannelSelection}, a consistent set of 19 electrodes was selected. The bipolar derivation for each channel is computed as the voltage difference between two electrodes:
+\begin{equation}
+M_k[t] = X_i[t] - X_j[t]
+\end{equation}
+where $M_k[t]$ denotes the $k$-th bipolar channel at time $t$, derived from electrodes $i$ and $j$, and $X_i[t]$, $X_j[t]$ are the corresponding time-domain signals. This differencing strategy captures localized voltage gradients while minimizing reference bias, facilitating robust seizure localization and inter-subject generalization~\cite{tuszChannelSelection}.
+
+\subsubsection{Notch filtering}
+EEG signals are frequently contaminated by narrowband interference from electrical power lines, typically at 50~Hz or 60~Hz, depending on the regional power grid. This interference can distort spectral characteristics and mislead frequency-domain analyses, making its removal an essential preprocessing step in EEG pipelines~\cite{notch}.
+
+To suppress this periodic interference without significantly affecting adjacent frequency components, this work applies a second-order Infinite Impulse Response (IIR) notch filter to each EEG channel. The filter is designed to attenuate signals centered around 60~Hz with a high quality factor $Q$, which governs the sharpness of the notch.
+
+The transfer function $H(z)$ of a second-order IIR notch filter is given by~\cite{notch}:
+\begin{equation}
+H(z) = \frac{1 - 2\cos(\omega_0)z^{-1} + z^{-2}}{1 - 2r\cos(\omega_0)z^{-1} + r^2 z^{-2}}
+\end{equation}
+
+Here,
+\begin{itemize}
+  \item $\omega_0 = \frac{2\pi f_0}{f_s}$ is the normalized notch frequency (e.g., $f_0 = 60$~Hz),
+  \item $f_s$ is the sampling rate (250~Hz in this work),
+  \item $r \in (0,1)$ is the pole radius controlling the filter’s bandwidth, which is related to the quality factor by 
+  \[
+  Q = \frac{f_0}{f_2 - f_1},
+  \]
+  \item and $f_1, f_2$ denote the -3~dB cutoff frequencies of the notch.
+\end{itemize}
+
+A high $Q$-factor (e.g., $Q = 30$) yields a narrow bandwidth, selectively attenuating 60~Hz interference while preserving physiological EEG components in nearby frequency bands.
+
+\subsubsection{Resampling}
+EEG recordings in the TUSZ dataset are sampled at different original rates, commonly 250 Hz, 512 Hz, or 1024 Hz, depending on acquisition hardware and protocol~\cite{zscore}. To ensure temporal consistency across subjects and facilitate uniform spectrogram computation, all EEG signals are resampled to 200 Hz.
+
+Resampling is performed after filtering, using linear interpolation to compute intermediate values. This choice balances computational efficiency with sufficient temporal precision. The 200 Hz sampling rate preserves frequency content up to the Nyquist limit of 100 Hz, which is appropriate since most seizure-relevant EEG activity occurs below this threshold.
+
+\subsubsection{Z-score Normalization}
+After filtering and resampling, EEG signals are standardized using Z-score normalization. This step accounts for inter-patient variability and technical differences such as amplifier gain or electrode impedance, which can result in significant differences in signal amplitude across recordings~\cite{zscore}.
+
+Normalization is performed per segment, where each segment is treated independently. For a given segment \text{X}, the normalized signal $X_{\text{norm}}$ is computed as~\cite{zscore}:
+\begin{equation}
+\centering
+X_{\text{norm}} = \frac{X - \mu}{\sigma}
+\label{eq:normalization}
+\end{equation}
+where $\mu$ and $\sigma$ are the mean and standard deviation of the EEG segment, respectively. This operation ensures that each input to the model has zero mean and unit variance, promoting numerical stability and faster convergence during training.
+
+This work applies normalization to non-overlapping 5-second segments (corresponding to 1000 samples at 200 Hz), matching the temporal resolution used in the segmentation stage.
+
+\subsubsection{Segmentation}
+EEG signals are recorded as continuous time-series data, representing voltage variations captured over time. This time-domain representation directly reflects electrical brain activity as it evolves. However, neural network models typically require fixed-size inputs for efficient processing and consistent learning~\cite{eegsignal}. To meet this requirement, the continuous EEG recordings are segmented into short, uniform-length segments.
+
+In this work, each segment is precisely 5 seconds long. Given the standardized sampling rate of 200 Hz, each segment comprises exactly 1000 data points (samples). When the total length of an EEG recording does not divide evenly into segments of this fixed length, the data is padded symmetrically at the start and end with zeros. This ensures every segment retains the same duration and the original temporal alignment of the EEG data is preserved.
+
+Segmenting EEG recordings into uniform, short segments provides several benefits. It enables the neural network to learn efficiently by processing multiple EEG segments simultaneously during training (mini-batch processing)~\cite{EEGSignalAnalysis}. It also helps maintain a balanced representation of seizure and non-seizure segments within the dataset, supporting accurate modeling of seizure-related dynamics~\cite{EEGSignalAnalysis}. Lastly, segmenting the data emphasizes short-term temporal patterns essential for detecting the onset and progression of seizure activity~\cite{EEGSignalAnalysis}.
+
+\subsubsection{Spectrogram Computation}
+In seizure detection, examining how the frequency content of EEG signals changes over time is crucial, as abnormal patterns in specific frequency bands often mark seizures. Rather than analyzing EEG solely in the time or frequency domain, this work uses a time–frequency representation to preserve temporal and spectral information. A widely used technique is the spectrogram, which reflects how the signal’s power spectrum evolves over time~\cite{EEGSignalAnalysis}.
+
+For each standardized EEG segment of 5 seconds (1000 samples at 200 Hz), a short-time Fourier transform (STFT) was computed separately for each EEG channel. Specifically, the spectrogram calculation used a 256-sample Hann window (corresponding to approximately 1.28 seconds) with a 50\% overlap (128 samples) between successive windows. This window length ensures that each overlapping interval is short enough to assume approximate stationarity of the EEG signal. Stationarity implies that the statistical properties of the EEG signals, such as mean and variance, remain relatively constant within each short segment. However, EEG signals are generally non-stationary due to rapidly changing neural dynamics~\cite{EEGSignalAnalysis}.
+
+After computing the STFT, each segment produced a spectrogram, a 2D representation showing signal power across frequency (frequency bins) over time (timesteps). Each spectrogram was normalized to the range [0, 1] using min-max normalization. This normalization facilitates direct comparison of spectral energy distributions across segments and channels, regardless of amplitude variations.
+
+The resulting channel-wise spectrogram for each EEG segment has dimensions determined by the STFT parameters: frequency bins × time steps. With a sampling rate of 200 Hz, a 256-sample window length (1.28 seconds), and a 128-sample overlap (0.64 seconds hop size), each 5-second EEG segment yields a spectrogram dimension of 129 frequency bins × 31 timesteps per channel.
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{400pt}
+ 	\import{gfx/}{compare.pdf_tex} 	 	
+	\caption[Comparison of Normal vs. Seizure Spectrograms]{Comparison of Normal vs. Seizure Spectrograms.}
+	\label{fig:psd}
+\end{figure}
+
+This spectrogram-based transformation captures rich temporal and spectral cues essential for detecting epileptic activity. Numerous studies have shown that seizure events often exhibit characteristic bursts of high-frequency components (e.g., gamma band) and abrupt spectral shifts not present in baseline EEG~\cite{niedermeyer2005}. These pathological patterns are effectively captured by the time–frequency representation of the signal.
+
+In contrast, non-seizure EEG typically displays more stationary spectral content, with energy concentrated in canonical frequency bands such as delta (0.5-4~Hz), theta (4–8~Hz), or alpha (8–13~Hz)~\cite{niedermeyer2005}. Figure~\ref{fig:psd} provides a visual example, highlighting the increased spectral variability during a seizure episode compared to a stable normal segment.
+\clearpage
+%---------------------------------------CORRUPTION-------------------------------------------
+%---------------------------------------CORRUPTION-------------------------------------------
+%---------------------------------------CORRUPTION-------------------------------------------
+%---------------------------------------CORRUPTION-------------------------------------------
+%---------------------------------------CORRUPTION-------------------------------------------
+\section{Data Corruption Techniques}
+To systematically evaluate the robustness of the models developed in this work, a suite of synthetic corruptions was applied to the held-out test set of the TUH EEG Seizure Corpus (TUSZ). These corruptions simulate real-world degradations commonly encountered in clinical and ambulatory EEG recordings, such as sensor failure, noise bursts, and frequency-specific signal distortions. Unlike traditional data augmentation, which enriches the training data to improve generalization~\cite{spectral_aug}, these techniques are applied exclusively to the test set, creating controlled distribution shifts to rigorously probe model behaviour under non-ideal conditions.
+
+The corruptions are organized based on the domain in which they operate. Time-domain corruptions are applied directly to the raw EEG waveform, introducing temporal noise patterns or segment-level alterations. Frequency-domain corruptions manipulate the signal after a Fourier transformation, simulating spectral noise or band-specific interference. Lastly, time–frequency domain corruptions operate on the spectrogram representation, modifying both temporal and spectral features simultaneously.
+
+Each corruption is parameterized by a severity level ranging from 1 (mild) to 5 (severe), following a standardized protocol inspired by the ImageNet-C framework~\cite{benchmarkingneuralnetworkrobustness}. In ImageNet-C, these severity levels were designed to evaluate model robustness under increasingly challenging perturbations. Adopting a similar approach, each corruption is applied to the EEG recordings at five predefined severity levels in this work, allowing for fine-grained robustness evaluation. The resulting test sets are collectively referred to as TUSZ-C (Corrupted TUSZ) and are used solely during inference to preserve a strict separation from training and validation data.
+
+\subsection{Time-Domain Corruptions}
+Time-domain corruptions operate directly on the raw EEG waveform~\cite{timedomain}. These perturbations simulate real-world signal artifacts caused by sensor detachment, hardware malfunction, patient movement, or environmental interference conditions commonly encountered in long-term or ambulatory EEG recordings. Unlike frequency-domain distortions, time-domain corruptions alter the morphology and continuity of the signal in its native representation, often degrading the temporal dynamics that models rely on to detect meaningful patterns such as seizure onsets or phase shifts~\cite{timedomain1}.
+
+Prior works in robust speech recognition and physiological signal processing have shown that neural networks are particularly sensitive to waveform-level corruptions such as noise bursts, dropped segments, or amplitude distortions~\cite{timedomain1, timedomain2}. In this work, several synthetic time-domain corruptions are introduced to the test set to evaluate the resilience of the trained EEG models under temporal disruption. Each corruption is parameterized by severity and applied independently per sample, following a standardized protocol inspired by the ImageNet-C benchmark~\cite{benchmarkingneuralnetworkrobustness}.
+
+\subsubsection{Signal Dropout}
+Signal dropout is designed to mimic temporary loss of signal due to electrode detachment, motion artifacts, or transmission loss, phenomena commonly encountered in long-term EEG monitoring~\cite{timedomain1}. These dropouts may manifest as brief flatlines or zeroed-out intervals in the time series. For seizure detection or anomaly recognition systems, the ability to maintain reliable predictions under such conditions is crucial.
+
+Let \( x \in \mathbb{R}^T \) denote a 1D EEG signal segment of duration \( T \) samples. Signal dropout is applied by randomly zeroing out multiple subsegments of the signal. The number, length, and location of these dropped intervals are sampled independently for each segment and corruption severity level.
+
+The corrupted signal \( \tilde{x} \in \mathbb{R}^T \) is constructed as:
+
+\begin{equation}
+\tilde{x}_t = 
+\begin{cases}
+0, & \text{if } t \in \bigcup_{i=1}^{n} [s_i, s_i + l_i) \\
+x_t, & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\noindent Where:
+\begin{itemize}
+  \item $n$: number of dropped intervals, computed so that the expected total dropped samples equals $\text{dropout\_prob}\times T$.  Concretely,
+  \begin{equation}
+      n \;=\;\left\lfloor\frac{\text{dropout\_prob}\times T}{\max(\text{min\_length},1)}\right\rfloor
+  \end{equation}
+  \item $s_i$: randomly chosen start time of the $i$-th dropout interval.
+  \item $l_i$: uniformly sampled length of the $i$-th interval in $[\text{min\_length},\,\text{max\_length}]$.
+  \item $x_t$: original signal at time $t$.
+\end{itemize}
+
+The corruption is controlled by three parameters: 
+$\text{dropout\_prob} = 0.05 \times s$,  $\text{min\_length} = 0.1 \,\frac{s}{5}\,T$, and $\text{max\_length} = 0.2 \,\frac{s}{5}\,T$.
+
+\noindent where \( s \in \{1, 2, 3, 4, 5\} \) is the severity level and \( T = 2500 \) samples (10s at 250 Hz). These parameters are used to control both the number and duration of dropped intervals, ensuring stronger degradation at higher severity.
+\begin{figure}[h]
+	\centering
+    \def\svgwidth{420pt}
+ 	\import{gfx/}{signal_dropout_10s_segment.pdf_tex} 	 	
+	\caption[Effect of signal dropout on a 10-second EEG segment]{Effect of Signal Dropout on a 10-second EEG segment. As severity increases, longer portions of the waveform are replaced with zeros, fully blanking the signal at severity 5.}
+	\label{fig:signal_dropout}
+\end{figure}
+
+Figure~\ref{fig:signal_dropout} demonstrates the visual impact of signal dropout on a 10-second EEG segment. The topmost plot shows the raw, uncorrupted signal. The bottom left plot represents severity level 2, where a portion of the signal is dropped. The bottom rightmost plot, corresponding to severity level 5, shows a complete loss of signal content, simulating a worst-case sensor failure.
+
+\subsubsection{Channel Dropout}
+Channel dropout emulates the complete loss of signal from individual EEG electrodes, for example, owing to electrode detachment, motion artifacts, high contact impedance, or hardware failure, all of which occur frequently during long-term or ambulatory recordings \cite{channel_dropout1,channel_dropout4}.  
+Unlike additive temporal noise, channel dropout operates in the \emph{spatial} domain: the entire waveform of a selected electrode is replaced by zeros, eliminating both temporal and spatial information from that channel~\cite{channel_dropout3}. Such corruption markedly deteriorates the performance of models that exploit inter-channel dependencies (e.g., spatial or graph convolutions) \cite{channel_dropout2,channel_dropout3}.
+
+In this work, each channel is dropped independently according to a Bernoulli random variable whose success probability depends on the corruption \emph{severity level} \(s\in\{1,\dots,5\}\).  
+Let \(\mathbf{x}\in\mathbb{R}^{C\times T}\) denote an EEG segment with \(C\) channels and \(T\) time samples. The corrupted segment \(\tilde{\mathbf{x}}\) is obtained as
+\begin{equation}
+\tilde{x}_{c}(t)=
+\begin{cases}
+0, & \text{with probability } p_{s},\\[4pt]
+x_{c}(t), & \text{with probability } 1-p_{s},
+\end{cases}\qquad
+c=1,\dots,C,\;t=1,\dots,T,
+\label{eq:channel_dropout}
+\end{equation}
+Where the dropout probability increases linearly with severity, \(p_{s}=0.1\,s\). Hence, at lower severities (\(s{=}1\),\(2\)) only a minority of electrodes are suppressed, preserving sufficient spatial structure for downstream analysis; higher severities induce widespread dropout and allow controlled stress-testing of spatial robustness.
+
+\begin{figure}[h!]
+    \centering
+    \def\svgwidth{380pt}
+    \import{gfx/}{channel_dropout.pdf_tex}
+    \caption[Effect of Channel Dropout on a 10-s EEG segment]{Channel-dropout corruption applied to a 10-second EEG segment. The left column shows uncorrupted signals; the right column shows the corresponding corrupted signals at severity level \(2\).}
+    \label{fig:channel_dropout}
+\end{figure}
+
+Figure~\ref{fig:channel_dropout} contrasts a 10-s raw EEG segment (left) with its corrupted counterpart at severity level \(s{=}2\) (right), where several but not all channels are completely silenced, mimicking the intermittent electrode reliability observed in practice.
+
+\subsubsection{Gaussian Noise}
+Gaussian noise is a classical corruption strategy in signal processing, commonly used to evaluate model robustness under additive stochastic perturbations. In the context of EEG, such noise mimics real-world sensor degradations including electromagnetic interference, unstable electrode contact, or analog-to-digital conversion artifacts~\cite{gaussian}.
+
+Let \( \mathbf{x} \in \mathbb{R}^{C \times T} \) be an EEG segment with \( C \) channels and \( T \) time steps. We define the corrupted signal \( \tilde{\mathbf{x}} \) by additive zero-mean Gaussian noise:
+
+\begin{equation}
+\tilde{\mathbf{x}} = \mathbf{x} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \sigma_s^2)
+\end{equation}
+
+Here, \( \boldsymbol{\epsilon} \) represents independent and identically distributed (i.i.d.) noise applied to each element of the signal. The noise intensity \( \sigma_s \) is scaled by severity level \( s \in \{1,2,3,4,5\} \) according to:
+
+\begin{equation}
+\sigma_s = 0.1 \cdot s \cdot \mathrm{std}(\mathbf{x})
+\end{equation}
+
+This formulation ensures signal-relative perturbations that are linearly scaled in strength. Unlike fixed-standard-deviation noise, this approach adjusts to the signal's inherent amplitude, preserving comparability across EEG recordings with different baseline variances. Larger values of \( \sigma \) correspond to more intense noise corruption. The noise is applied independently across all channels and time steps, preserving the temporal structure while injecting high-frequency randomness.
+
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{400pt}
+ 	\import{gfx/}{gaussian_noise.pdf_tex} 	 	
+	\caption[Gaussian Noise corruption applied to a 10-second EEG segment]{EEG segment corrupted by Gaussian noise. Severity 2 introduces moderate perturbations, while severity 5 causes substantial distortion, reducing the visibility of fine-grained signal features.}
+	\label{fig:gaussian}
+\end{figure}
+
+Following the ImageNet-C robustness protocol~\cite{benchmarkingneuralnetworkrobustness}, this method allows controlled corruption intensity from mild (severity 1) to highly disruptive (severity 5). Noise is applied independently across all channels and time steps, preserving the temporal structure while injecting high-frequency randomness that challenges feature extraction. Figure~\ref{fig:gaussian} illustrates the degradation of a 10-second EEG segment at severity levels 2 and 5.
+
+\subsection{Frequency-Domain Corruptions}
+While time-domain perturbations affect individual samples or local regions of the signal, frequency-domain corruptions operate globally on the signal's spectral representation. These techniques simulate artifacts such as hardware calibration errors, broadband interference, or physiological frequency drifts, which are common in real-world EEG acquisition setups. By manipulating the Fourier-transformed signal, one can systematically alter frequency content while preserving the temporal resolution of the original data~\cite{gaussian2}.
+Let \( x[n] \in \mathbb{R}^T \) denote a single-channel EEG segment of length \( T \). Applying the real-valued inverse Discrete Fourier Transform (iDFT) yields a complex-valued frequency-domain representation~\cite{eeg}:
+
+\begin{equation}
+X[k] = \sum_{n=0}^{T-1} x[n] \cdot e^{-2\pi i \frac{kn}{T}}, \quad k = 0, \dots, \left\lfloor \frac{T}{2} \right\rfloor
+\end{equation}
+
+Each coefficient \( X[k] \in \mathbb{C} \) encodes the spectral content of the signal at frequency index \(k\), with its magnitude and phase representing the amplitude and phase shift of the corresponding sinusoidal component. Frequency-domain corruptions are applied by perturbing \( X[k] \) directly in the complex domain. The corrupted spectrum is then transformed back into the time domain using the inverse Discrete Fourier Transform (iDFT), preserving the temporal resolution while modifying global spectral characteristics.
+
+\subsubsection{Gaussian Noise}
+Gaussian noise injection in the frequency domain, implemented by transforming a time-series signal via the Fast Fourier Transform (FFT), perturbing its spectral components with noise, and inverting the transform, is theoretically equivalent to adding Gaussian noise directly in the time domain. This equivalence arises from the linearity property of the Fourier transform, where additive operations in the time domain correspond directly to additive operations in the frequency domain~\cite{gaussian2}. As a result, frequency-domain Gaussian noise does not introduce any fundamentally new corruption dynamics compared to its time-domain counterpart.
+
+\subsection{Time-Frequency Domain Corruptions}
+In signal processing, the \textit{time–frequency domain} refers to a representation where both time and frequency information are preserved simultaneously. Unlike the time domain, which reveals temporal changes, or the frequency domain, which describes spectral content aggregated over time, the time–frequency (TF) representation, such as a spectrogram, maps how the spectral properties of a signal evolve over time~\cite{timefreq}. This is particularly important in non-stationary signals like EEG, where neural oscillations and artifacts vary dynamically.
+
+The most commonly used time–frequency transform for EEG is the Short-Time Fourier Transform (STFT), which partitions the signal into overlapping windows and computes the Fourier transform within each~\cite{timefreq}. This results in a 2D matrix \( S(f, t) \in \mathbb{R}^{F \times T} \), where \( f \) denotes frequency bins and \( t \) the temporal frames. This joint representation enables localised corruption, altering specific frequencies at specific times, mimicking realistic EEG degradation patterns such as intermittent sensor detachment or transient spectral distortions.
+
+\subsubsection{Spectral Augmentation}
+Spectral augmentation originates from the SpecAugment technique in speech processing~\cite{spectral_aug}. It introduces robustness by randomly masking or attenuating blocks of frequency and/or time in spectrograms. While initially proposed for mel-spectrograms in automatic speech recognition, this technique has been shown to generalize well to other domains, including EEG~\cite{spectral_aug}.
+
+The method applies two primary forms of corruption:
+
+\begin{itemize}
+    \item Frequency masking: simulates dropout or attenuation in specific EEG bands (e.g., alpha: 8–12 Hz, beta: 12–30 Hz).
+    \item Time masking: simulates temporal artifacts such as transient sensor failures or movement-induced dropouts.
+\end{itemize}
+
+This kind of corruption targets spectrotemporal robustness, allowing models to generalize better across varying frequency-localized noise profiles. In this work, spectral augmentation is applied as a synthetic corruption to test data, simulating real-world degradation localized in the spectrogram domain. The implementation proceeds as follows:
+In this work, spectral augmentation is applied as a synthetic corruption to test data, simulating real-world degradation localized in the spectrogram domain. The implementation proceeds as follows:
+
+\begin{enumerate}
+    \item Spectrogram Computation: Each EEG segment \( x[n] \in \mathbb{R}^T \) is transformed into a magnitude spectrogram \( S(f, t) \in \mathbb{R}^{F \times T} \) using a Hann window of 256 samples (\( \approx 1 \) second at 250 Hz) with 50\% overlap. This yields approximately 129 frequency bins and 21 time frames per 10-second segment.
+
+    \item Severity Parameterization: Inspired by the ImageNet-C corruption protocol~\cite{benchmarkingneuralnetworkrobustness}, five severity levels \( s \in \{1, 2, 3, 4, 5\} \) are defined. Each severity level determines:
+    \begin{itemize}
+        \item A frequency band \( [f_{\text{low}}, f_{\text{high}}] \) to be targeted (e.g., theta, alpha, beta).
+        \item A reduction factor \( r = 1 - 0.1 \cdot s \), scaling down the energy in that band.
+        \item A corruption probability \( p = 0.1 \cdot s \) controlling the likelihood of masking at each time frame.
+    \end{itemize}
+
+    \item Corruption Procedure: A binary mask is created over \( S(f, t) \), selecting both frequency rows and time columns probabilistically:
+    \begin{equation}
+    S_2(f, t) =
+    \begin{cases}
+        r \cdot S(f, t), & \text{if } f \in \text{band},\ t \sim \text{Bernoulli}(p) \\
+        S(f, t), & \text{otherwise}
+    \end{cases}
+    \end{equation}
+
+    This modifies only the selected time-frequency blocks, preserving the remaining signal integrity.
+
+    \item Inverse Transformation (optional): Depending on the model, the corrupted spectrogram \( S_2(f, t) \) is either:
+    \begin{itemize}
+        \item Used directly as input (in spectrogram-based models), or
+        \item Inverted via iSTFT to yield a corrupted time-domain signal \( \tilde{x}[n] \) (for waveform models).
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[h]
+	\centering
+    \def\svgwidth{220pt}
+ 	\import{gfx/}{specaug.pdf_tex} 	 	
+	\caption[Spectral augmentation applied to a 10-second EEG segment]{Spectral augmentation applied to a 10-second EEG segment. Top: raw input; Bottom: severity level 2.}
+	\label{fig:specaug}
+\end{figure}
+
+Figure~\ref{fig:specaug} illustrates the visual impact of spectral augmentation applied to a representative 10-second EEG segment. The leftmost panel shows the original, unaltered segment. The middle and right panels correspond to corrupted versions at severity level 2. Though the corruption occurs in the time–frequency domain, the resulting signal, after inverse STFT, is shown in the time domain, revealing subtle but structured waveform perturbations. These distortions reflect localized attenuation of EEG band power (e.g., in alpha or beta ranges) at random time frames, effectively simulating frequency-selective sensor errors.
+
+\section{Model Variants}
+\subsection{Multi-Input Multi-Output (MIMO)}
+
+\subsubsection{Overview}
+In traditional supervised learning, a neural network receives a single input (e.g., an EEG segment) and produces a corresponding single output (e.g., a binary seizure prediction). In contrast, the Multi-Input Multi-Output (MIMO) framework enables a neural network to process multiple inputs simultaneously and generate their respective predictions in parallel~\cite{mimofoundation}. This setup allows a single network to emulate an ensemble of subnetworks, thereby enhancing both predictive performance and robustness without requiring multiple separately trained models or additional inference overhead.
+
+To illustrate the concept, consider a standard image classification task (shown in Figure~\ref{fig:mimo}), such as distinguishing between cats and dogs. In the conventional approach, each input image is processed individually to yield one prediction. However, in a MIMO setup, the network receives a batch of different images, e.g., a cat and a dog, and simultaneously produces predictions for both. Each input–output pathway functions as a virtual subnetwork. Although these subnetworks share the same core parameters, they are trained to solve the task independently, which fosters prediction diversity across heads.
+
+At inference time, a single EEG segment is passed once through all MIMO heads in parallel. Each head, having been initialized and trained with different weight trajectories—constitutes a distinct subnetwork. Their M predictions are then averaged to yield the final output. No additional test‐time perturbations are required; diversity arises from the ensemble of subnetworks themselves~\cite{havasi2020training}. This mechanism approximates ensemble behavior within a single forward pass, making MIMO particularly attractive for time-sensitive applications such as clinical diagnostics, where computational efficiency and model reliability are both critical.
+
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{350pt}
+ 	\import{gfx/}{mimo.pdf_tex} 	 	
+	\caption[Illustration of the MIMO framework]{Illustration of the MIMO framework using an image classification example. Each input (e.g., cat or dog image) is passed through a shared network that simulates multiple independent subnetworks. During training, each input–output pair is treated as a distinct path (virtual head), allowing the model to produce separate predictions \( d_o, d_1 \)  for each input while sharing the same core parameters.}
+	\label{fig:mimo}
+\end{figure}
+
+\subsubsection{Mathematical description}
+To understand the core principles behind the MIMO strategy used in this work, we present a mathematical formulation inspired by Havasi et al.~\cite{modelMIMO}. While their formulation is model- and task-agnostic, it provides the theoretical foundation upon which the MIMO-based architecture in this work is adapted.
+
+Let the training dataset consist of labeled EEG spectrogram segments:
+\begin{equation}
+\mathcal{D} = \left\{ \left(S^{(n)}, y^{(n)}\right) \right\}_{n=1}^{N}
+\end{equation}
+where each \( S^{(n)} \in \mathbb{R}^{C \times F \times T} \) denotes the spectrogram of the \( n \)-th EEG segment (with \( C \) channels, \( F \) frequency bins, and \( T \) time frames), and \( y^{(n)} \in \{0, 1\} \) is its binary seizure label.
+
+In a conventional supervised learning setup, a neural network parameterized by \( \theta \) defines a probabilistic mapping:
+
+\begin{equation}
+p_{\theta}(\hat{y} \mid S)
+\end{equation}
+
+and is trained to minimize the expected negative log-likelihood loss (or another surrogate loss, such as focal loss) with a regularization term \( R(\theta) \):
+
+\begin{equation}
+\mathcal{L}(\theta) = \mathbb{E}_{(S, y) \sim \mathcal{D}} \left[ -\log p_{\theta}(y \mid S) \right] + R(\theta)
+\end{equation}
+
+In the Multi-Input Multi-Output (MIMO) configuration used in this work, the network is trained on \( M \) independently sampled spectrogram-label pairs per step:
+
+\begin{equation}
+\left\{(S_1, y_1), \ldots, (S_M, y_M)\right\} \sim \mathcal{D}
+\end{equation}
+
+At the input stage, these \( M \) spectrograms are concatenated along a new dimension, forming a tensor of shape \( M \times C \times F \times T \). Each input \( S_m \) is passed through a head-specific convolution layer, followed by a shared ResNet-18 backbone, and finally through a head-specific fully connected classifier. This yields \( M \) predictive distributions:
+
+\begin{equation}
+\left\{p_{\theta}(y_1 \mid S_1, \ldots, S_M), \ldots, p_{\theta}(y_M \mid S_1, \ldots, S_M)\right\}
+\end{equation}
+
+The total loss over a training step is the sum of the negative log-likelihood (or focal) losses for each subnetwork:
+
+\begin{equation}
+\mathcal{L}_M(\theta) = \mathbb{E}_{(S_1, y_1), \ldots, (S_M, y_M) \sim \mathcal{D}} \left[ \sum_{m=1}^{M} -\log p_{\theta}(y_m \mid S_1, \ldots, S_M) \right] + R(\theta)
+\end{equation}
+
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{400pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{mimo_formulation.pdf_tex} 	 	
+	\caption[Core concept of MIMO input-output mapping]{Illustration of the MIMO training setup.}
+	\label{fig:mimo_formulation}
+\end{figure}
+
+A schematic overview of the MIMO configuration is shown in Figure~\ref{fig:mimo_formulation}. Independently sampled EEG spectrograms \( x_1, x_2, x_m \), each represented in the time-frequency domain, are jointly processed by a single MIMO neural network. The model outputs corresponding predictions \( y_1, y_2, y_m \).
+
+This formulation allows each subnetwork (i.e., input-output pair within the shared model) to learn independently, encouraging diverse feature learning within a single training pass.
+
+At inference time, a previously unseen EEG spectrogram \( S_0 \) is replicated \( M \) times to form:
+
+\begin{equation}
+S_1 = S_2 = \ldots = S_M = S_0
+\end{equation}
+
+The network outputs \( M \) independent predictions, each approximating the same conditional distribution. The final prediction is obtained by averaging the individual outputs:
+
+\begin{equation}
+p_{\theta}(y_0 \mid S_0) = \frac{1}{M} \sum_{m=1}^{M} p_{\theta}(y_m \mid S_0, \ldots, S_0)
+\end{equation}
+
+This enables robust, ensemble-like predictions in a single forward pass, substantially improving calibration and generalization, particularly for noisy or out-of-distribution EEG inputs.
+
+\subsubsection{Learning Architecture}
+The MIMO-based model employed in this work builds upon the general formulation described earlier. The goal is to leverage an ensemble's predictive diversity while maintaining computational efficiency through a single shared architecture.
+
+The input to the model is a batch of EEG spectrogram segments, where each segment corresponds to a fixed-duration window of multichannel EEG signals. For each training iteration, $M$ independently augmented copies of the batch are created, representing $M$ diverse perspectives on the same data.
+
+Each augmented input $X_m$ is first passed through a head-specific convolutional layer with a large 7×7 kernel. These initial layers allow each ensemble head to learn distinct low-level features. The resulting feature maps are then fed into a shared ResNet-18 backbone, which extracts high-level spatio-temporal representations through a series of residual blocks. The use of residual connections allows for stable training of deeper architectures by mitigating gradient vanishing~\cite{resnet}.
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{130pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{mimo_backbone.pdf_tex} 	 	
+	\caption[MIMO Architecture Overview]{Overview of the MIMO ResNet-18 architecture.}
+	\label{fig:mimo_architecture}
+\end{figure}
+
+After global average pooling, the shared features are distributed to head-specific fully connected (FC) layers, each of which produces a binary classification logit. This architectural design enables ensemble-like behavior by encouraging subnetworks to learn complementary decision boundaries while sharing most of the model parameters.
+
+Figure~\ref{fig:mimo_architecture} illustrates this MIMO architecture, highlighting the modular flow from input spectrograms through shared and head-specific layers to ensemble outputs. During training, each head's prediction is supervised using the \textit{sigmoid focal loss}. Focal loss is particularly suitable for class imbalance, as it down-weights easy negatives and focuses training on harder examples:
+\begin{equation}
+\text{FL}(p_t) = -\alpha_t (1 - p_t)^{\gamma} \log(p_t)
+\end{equation}
+where \( \gamma \) is the focusing parameter and \( \alpha_t \) controls the weighting of classes.
+
+The model is optimized using the Adam optimizer~\cite{adamOptimizer} with an initial learning rate of $1 \times 10^{-3}$, which is reduced adaptively based on validation performance. Training proceeds with a batch size of 32 and incorporates early stopping based on validation F1 score and loss trends. The training steps described above are formally summarized in Algorithm~\ref{alg:mimo_training}.
+
+\begin{algorithm}[H]
+\caption{Training Procedure for MIMO ResNet-18 Model}
+\label{alg:mimo_training}
+\begin{algorithmic}[1]
+\Require Preprocessed EEG spectrogram dataset $\mathcal{D}$, number of ensemble heads $M$, initial learning rate $\eta$, epochs $E$, batch size $B$
+\State Initialize model parameters $\theta$
+\State Initialize optimizer (Adam) with learning rate $\eta$
+\For{$\text{epoch} = 1$ to $E$}
+  \For{each mini-batch $(X, Y) \in \mathcal{D}$}
+    \Comment{Dataset-level corruption/augmentation}
+    \State Apply chosen corruption/augmentation once to each sample in $X$
+    
+    \Comment{MIMO batch construction}
+    \State Sample $M$ random permutations $\{\pi_1, \dots, \pi_M\}$ of $\{1, \dots, B\}$
+    \For{$m = 1$ to $M$}
+      \State $X^{(m)} \gets X[\pi_m]$ \hfill \Comment{Shape: $[B, C, F, T]$}
+    \EndFor
+    
+    \Comment{Head-specific initial convolution}
+    \For{$m = 1$ to $M$}
+      \State $H_m \gets \text{HeadConv}_m(X^{(m)})$
+    \EndFor
+
+    \Comment{Shared backbone}
+    \State $H_{\text{shared}} \gets \text{BackboneResNet18}\left( \sum_{m=1}^{M} H_m \right)$
+
+    \Comment{Head-specific classifier}
+    \For{$m = 1$ to $M$}
+      \State $Z_m \gets \text{FC}_m(H_{\text{shared}})$ \hfill \Comment{Logits shape: $[B, 1]$}
+    \EndFor
+
+    \Comment{Loss and parameter update}
+    \State $L_m \gets \text{FocalLoss}(Z_m, Y)$ for each $m$
+    \State $L \gets \frac{1}{M} \sum_{m=1}^{M} L_m$
+    \State Backpropagate $L$, update $\theta$
+  \EndFor
+  \State Validate on hold-out set, adjust $\eta$ or early-stop if needed
+\EndFor
+\State \Return Learned parameters $\theta$
+\end{algorithmic}
+\end{algorithm}
+
+During training, each input is augmented with mild channel-wise Gaussian noise ($\sigma=0.01$). This augmentation is intended to promote diversity among the MIMO heads by introducing variation in the inputs according to Lakshminarayan et al.~\cite{lakshminarayanan2017simple}. However, since Gaussian noise is also used as a test-time corruption type, this introduces a form of data leakage that may inflate robustness results on that corruption. This is acknowledged in the discussion (Section~\ref{sec:limitations}).
+
+\subsection{Manifold Mixup}
+Manifold Mixup is a regularization technique that improves generalization and robustness in neural networks by interpolating hidden representations rather than raw inputs. While traditional Mixup~\cite{Mixup} generates virtual training examples by linearly combining input pairs and their corresponding labels in the input space, Manifold Mixup proposes to perform such interpolations at intermediate layers of the network~\cite{manifoldmixup}. This encourages the network to learn smoother decision boundaries in its learned feature space and has been shown to enhance performance on out-of-distribution and noisy inputs.
+
+The core idea is to expose the model to interpolated feature representations during training, thereby regularizing the hidden manifolds of the model. By training on these augmented intermediate representations, the model avoids overfitting to high-confidence but brittle patterns and instead learns more semantically meaningful features.
+
+\subsubsection{Mathematical description}
+Let \((x_i, y_i), (x_j, y_j) \in \mathcal{D}\) be two randomly selected training examples from the dataset. A standard neural network defines a sequence of transformations \( f = f_k \circ f_{k-1} \circ \cdots \circ f_1 \), mapping the input \( x \) to output \( f(x) \). In Manifold Mixup, we select a layer \( l \in \{1, \ldots, k\} \) and apply interpolation to the features at that layer.
+
+Let \( h_i = f_l(x_i) \) and \( h_j = f_l(x_j) \) be the intermediate representations at layer \( l \). We compute the mixed representation and label as:
+\begin{equation}
+\tilde{h} = \lambda h_i + (1 - \lambda) h_j, \quad \tilde{y} = \lambda y_i + (1 - \lambda) y_j
+\end{equation}
+
+
+where \( \lambda \sim \text{Beta}(\alpha, \alpha) \), with \( \alpha > 0 \) controlling the interpolation strength.
+
+The remaining layers \( f_{l+1}, \ldots, f_k \) process \( \tilde{h} \) to yield predictions \( \hat{y} = f_k \circ \cdots \circ f_{l+1}(\tilde{h}) \), and the loss is computed against \( \tilde{y} \).
+
+This encourages the model to produce meaningful outputs not only for training samples but also for interpolated representations in the hidden space, thereby improving generalization and robustness to out-of-distribution inputs.
+
+\subsubsection{Architectural Integration and Learning Approach}
+This section details how Manifold Mixup is integrated into the ResNet-18 architecture used in this work and how it is trained end-to-end on EEG spectrograms. Unlike standard input-level mixup, Manifold Mixup operates by interpolating hidden representations at randomly selected intermediate layers of the network. This yields a stronger regularization signal by enforcing linear behavior in deeper feature manifolds, which are closer to the decision boundaries.
+
+Figure~\ref{fig:manifoldmixup} illustrates the architecture. At each training iteration, two samples \((x_i, y_i)\) and \((x_j, y_j)\) are drawn from the training batch. A layer \(k\) is selected at random from a predefined set of eligible mixup layers \(\mathcal{K}\), such as the output of residual block 1, 2, or 3. The model computes the forward pass up to layer \(k\) for both inputs, obtaining the intermediate hidden representations \(h_i^{(k)} = f_k(x_i)\) and \(h_j^{(k)} = f_k(x_j)\).
+
+A mixing coefficient \(\lambda \sim \text{Beta}(\alpha, \alpha)\) is sampled, and the representations are linearly interpolated:
+
+\begin{equation}
+\tilde{h}^{(k)} = \lambda h_i^{(k)} + (1 - \lambda) h_j^{(k)}
+\end{equation}
+
+The mixed representation \(\tilde{h}^{(k)}\) is then propagated forward through the remaining network layers \(f_{>k}\) to obtain the logits \(\tilde{z} = f_{>k}(\tilde{h}^{(k)})\). The targets are similarly interpolated as:
+
+\begin{equation}
+\tilde{y} = \lambda y_i + (1 - \lambda) y_j
+\end{equation}
+
+For binary classification, labels are one-hot encoded vectors, and \(\tilde{y}\) remains a valid soft target. The model is trained to minimize the standard binary cross-entropy loss between \(\tilde{z}\) and \(\tilde{y}\).
+
+To stabilize training, batch normalization statistics are frozen during mixup layers, and residual connections are preserved around the interpolated hidden states. Mixup is applied per-batch, not per-sample, and care is taken to ensure that EEG segments in a mixup pair originate from the same channel layout. This is critical in EEG settings, where inter-channel alignment carries physiological meaning.
+
+Optimization is performed using the Adam optimizer with a base learning rate of \(1 \times 10^{-3}\), and early stopping based on validation F1-score. Mixup hyperparameter \(\alpha\) is set to 0.4 following the recommendation of Verma et al.~\cite{manifoldmixup}.
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{300pt}
+ 	\import{gfx/}{manifold.pdf_tex} 	 	
+	\caption[Overview of the Manifold Mixup learning process integrated into ResNet-18]{Overview of the Manifold Mixup learning process integrated into ResNet-18. Two EEG spectrograms \((x_i, y_i)\) and \((x_j, y_j)\) are independently passed through a shared ResNet-18 backbone.}
+	\label{fig:manifoldmixup}
+\end{figure}
+
+ %A hidden representation \( h \) is extracted at a randomly selected intermediate layer (one of ResNet-18's four residual blocks). These representations are linearly interpolated along with their labels using a sampled mixing coefficient \( \lambda \sim \text{Beta}(\alpha, \alpha) \). The mixed representation is propagated through the remaining layers, and the model is trained to predict the mixed label.%
+
+\subsection{MIMO + Manifold Mixup}
+
+To combine the complementary strengths of two robustness strategies, multi-input multi-output (MIMO) ensembling and Manifold Mixup regularization, we adopt a joint MIMO–Manifold Mixup framework.  In contrast to treating mixup and ensembling separately, our model processes multiple distinct inputs in parallel through a shared backbone and applies Manifold Mixup within it.  This architecture builds on Havasi \emph{et al.}’s MIMO paradigm~\cite{modelMIMO} and Verma \emph{et al.}’s Manifold Mixup~\cite{manifoldmixup}, but their integration for EEG analysis has not previously been explored.
+
+\subsubsection{Architecture Overview}
+Given a mini-batch of \(B\) spectrograms \(\{x_i\}_{i=1}^B\), we first apply any dataset-level corruptions or augmentations \emph{once} per sample (e.g.\ channel noise, spectral masks).  To form an ensemble of \(M\) subnetworks, we generate \(M\) independent random permutations \(\{\pi_m\}_{m=1}^M\) of the batch indices and stack
+\begin{equation}
+X_{\mathrm{mimo}} = \bigl[x_{\pi_1(1)},\dots,x_{\pi_1(B)};\;\dots\;;\,x_{\pi_M(1)},\dots,x_{\pi_M(B)}\bigr]\;\in\;\mathbb{R}^{M\times B\times C\times F\times T}\,
+\end{equation}
+
+Each slice \(X_{\mathrm{mimo}}[m]\) is processed by a head-specific 7×7 convolution, then passed through the shared ResNet-18 backbone.
+
+Within the backbone, at each training iteration we pick a random layer \(\ell\in\{0,1,2,3,4\}\) to perform Manifold Mixup.  Denote the intermediate features of two permuted heads at layer \(\ell\) by \(h_i\) and \(h_j\).  We interpolate
+\begin{equation}
+ \tilde{h} = \lambda\,h_i + (1-\lambda)\,h_j  
+\end{equation}
+\begin{equation}
+\tilde{y} = \lambda\,y_i + (1-\lambda)\,y_j
+\end{equation}
+with \(\lambda\sim\mathrm{Beta}(\alpha,\alpha)\).  The mixed feature \(\tilde{h}\) then continues through the remaining backbone layers.
+
+Finally, each of the \(M\) heads applies its own fully-connected layer to either the unmixed or the mixed feature (for heads \(i\) and \(j\), respectively), producing logits \(\hat y_1,\dots,\hat y_M\) (shown in Figure~\ref{fig:mimomanifoldmiup}).  At inference, we simply average those \(M\) predictions:
+\[
+\hat y = \frac1M\sum_{m=1}^M \hat y_m.
+\]
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{410pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{mimomanifoldmixup.pdf_tex} 	 	
+	\caption[Schematic of the combined MIMO + Manifold Mixup architecture.]{Schematic of the combined MIMO + Manifold Mixup architecture. Multiple augmented spectrogram inputs are processed through head-specific convolutions and a shared ResNet-18 backbone.}
+	\label{fig:mimomanifoldmiup}
+\end{figure}
+
+\subsubsection{Training Procedure}
+During each training step:
+
+\begin{enumerate}
+  \item Sample a batch \(\{(x_i,y_i)\}_{i=1}^B\) and apply any dataset-level corruptions once per \(x_i\).  
+  \item Generate \(M\) random permutations \(\{\pi_m\}\) of \(\{1,\dots,B\}\) and stack into \(X_{\mathrm{mimo}}\in\mathbb{R}^{M\times B\times C\times F\times T}\).  
+  \item Choose a random mixup layer \(\ell\in\{0,1,2,3,4\}\).  
+  \item Forward \(X_{\mathrm{mimo}}\) through:
+    \begin{itemize}
+      \item Head-specific initial convolutions.  
+      \item Shared ResNet-18 up to layer \(\ell\).  
+      \item Manifold Mixup at \(\ell\): interpolate two head features and labels.  
+      \item Remaining ResNet-18 layers.  
+      \item Head-specific FC layers to produce \(\hat y_1,\dots,\hat y_M\).  
+    \end{itemize}
+  \item Compute two losses:
+    \[
+      \mathcal{L}_{\mathrm{head}}
+      = \frac1M\sum_{m=1}^M\mathrm{FL}(\hat y_m,\,y),
+      \quad
+      \mathcal{L}_{\mathrm{mix}}
+      = \mathrm{FL}(\hat y_{\mathrm{mix}},\,\tilde y).
+    \]
+  \item Total loss: \(\mathcal{L}_{\mathrm{total}} = \mathcal{L}_{\mathrm{head}} + \mathcal{L}_{\mathrm{mix}}.\)  
+  \item Backpropagate \(\mathcal{L}_{\mathrm{total}}\) and update parameters via Adam.
+\end{enumerate}
+
+\noindent
+This procedure ensures that each head learns from a distinct subset of the batch (MIMO diversity) and that Manifold Mixup smooths decision boundaries within the shared backbone.  No per-head augmentations are applied at inference; diversity arises solely from the learned subnetworks.
+
+\section{Test-Time Adaptation}
+Test-time adaptation (TTA) has recently emerged as a compelling paradigm for improving model performance under distribution shifts between training and testing conditions. As illustrated in Figure~\ref{fig:tta}, unlike conventional inference, where a pre-trained model’s parameters remain fixed, TTA allows a model to adjust its internal representations on unlabeled test data~\cite{TTA}.
+
+
+In this work, we adopt the TENT algorithm.  TENT minimizes the prediction entropy  by~\cite{tta}:
+\begin{equation}
+\mathcal{L}_{\mathrm{entropy}}
+= -\frac{1}{N}\sum_{i=1}^{N}\bigl[p_i\log p_i + (1-p_i)\log(1-p_i)\bigr]   
+\end{equation}
+
+Where \(p_i\) is the model’s predicted probability for the positive class on sample \(i\).  Crucially, following the original TENT implementation, we restrict adaptation to the affine scale and shift parameters of all BatchNorm layers, leaving the remaining weights frozen.  
+
+\begin{figure}[h]
+  \centering
+  \def\svgwidth{0.8\columnwidth}
+  \import{gfx/}{tta.pdf_tex}
+  \caption[Overview of TENT-based test-time adaptation process]{Overview of TENT-based test-time adaptation process.}
+  \label{fig:tta}
+\end{figure}
+
+\subsection*{Implementation Details}
+
+We implement TENT in this work as follows:
+\begin{itemize}
+  \item Initialize an SGD optimizer over only the BatchNorm \(\{\gamma,\beta\}\) parameters.
+  \item For each test batch/sample, perform \(K\) steps (typically \(K=1\)–3) of gradient descent on \(\mathcal{L}_{\mathrm{entropy}}\).  
+  \item Recompute final predictions with the adapted model.
+\end{itemize}
+
+Restricting updates to BN parameters ensures (a) fast, label-free adaptation and (b) preservation of the core representations learned during training.  When evaluated on both clean EEG and the corrupted TUSZ‐C benchmark, TENT yields improved calibration and robustness under realistic noise and dropout artifacts.
+
+While more recent TTA variants (e.g.\ SAR~\cite{ZHOU2024109974}, COME~\cite{tta2}) extend beyond entropy minimization or adapt deeper layers, we focus here on the original TENT algorithm as a lightweight, widely adopted baseline for EEG applications.
+
+%-----------------------EVALUATION-------------------------
+%-----------------------EVALUATION-------------------------
+%-----------------------EVALUATION-------------------------
+%-----------------------EVALUATION-------------------------
+%-----------------------EVALUATION-------------------------
+\section{Evaluation}
+This chapter outlines the evaluation methodology adopted to assess the predictive performance and reliability of the neural models developed in this work. Given the emphasis on improving both robustness and calibration, the models were systematically tested across two key conditions: (i) the clean held-out test set from the preprocessed TUH EEG Seizure Corpus (TUSZ), and (ii) a synthetically corrupted version of this test set designed to simulate real-world distributional shifts, such as noise, channel dropout, or sensor artifacts encountered in clinical environments. Evaluation was performed using a combination of classification metrics (F1-score, accuracy) and probabilistic calibration metrics (expected calibration error), allowing for a multifaceted view of each model’s behavior under clean and perturbed conditions.
+
+To compute the classification metrics, predictions are compared against ground truth labels using standard confusion matrix components: true positives (TP), false positives (FP), true negatives (TN), and false negatives (FN).
+
+\subsection*{F1-Score}
+The F1-score is a widely used metric for evaluating binary classifiers, particularly when class distributions are imbalanced~\cite{f1}. It combines two fundamental components of classification quality: precision and recall, into a single harmonic mean. This makes it especially useful in medical applications, such as EEG classification, where correctly identifying minority class instances (e.g., seizure or artifact) is critical.
+Let the ground-truth labels be \( y_i \in \{0, 1\} \) and the model predictions be \( \hat{y}_i \in \{0, 1\} \), for all \( i = 1, \ldots, N \) samples in the test set.
+
+We define the following terms:
+\begin{itemize}
+    \item True Positives (TP): Number of samples where \( y_i = 1 \) and \( \hat{y}_i = 1 \)
+    \item False Positives (FP): Number of samples where \( y_i = 0 \) and \( \hat{y}_i = 1 \)
+    \item False Negatives (FN): Number of samples where \( y_i = 1 \) and \( \hat{y}_i = 0 \)
+\end{itemize}
+
+From these counts, we compute: Precision, also known as the \textit{Positive Predictive Value}, measures the fraction of predicted positive instances that are actually correct~\cite{f1}:
+\begin{equation}
+\text{Precision} = \frac{\text{TP}}{\text{TP} + \text{FP}}
+\end{equation}
+A high precision indicates that when the model predicts the positive class, it is usually correct. Recall, also known as \textit{Sensitivity} or \textit{True Positive Rate}, quantifies the fraction of actual positive instances that are correctly identified~\cite{f1}:
+\begin{equation}
+\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}
+\end{equation}
+A high recall implies that most of the true positive cases were recovered by the model. The F1-score balances precision and recall by computing their harmonic mean~\cite{f1}:
+\begin{equation}
+\text{F1} = \frac{\text{2.Precision.Recall}}{\text{Precision} + \text{Recall}}
+\end{equation}
+This score can take values between 0 and 1, with a high value indicating good model performance with high precision and high recall. This metric is particularly useful when the dataset is unbalanced and there is a risk that the model will be biased towards the more common class. In this work, the F1-score is used as a primary evaluation metric to assess model performance on both clean and corrupted EEG test data, offering a balanced view of how well the model detects true positive events while minimizing false alarms.
+
+\subsection*{Accuracy}
+In binary classification tasks such as those evaluated in this work, Accuracy is often the first metric used to assess a model's performance~\cite{accuracy}. It is defined as the proportion of correct predictions (both positive and negative) out of the total number of predictions~\cite{accuracy}:
+\begin{equation}
+\text{Accuracy} = \frac{\text{TP} + \text{FN}}{\text{TP} + \text{TN} + \text{FP} + \text{FN}}
+\end{equation}
+It provides an overall correctness score, which is useful in balanced datasets where all classes are equally represented. For example, in a task where the number of seizure and normal segments is roughly equal, a high accuracy implies good model performance across both classes.
+
+However, in imbalanced datasets like those used in EEG classification tasks, where seizure events are rare, accuracy can give a misleadingly optimistic estimate. A trivial classifier that always predicts the majority class (e.g., “no seizure”) might still achieve high accuracy without correctly identifying any seizures.
+
+\subsection*{Expected calibration error (ECE)}
+While classification metrics such as accuracy and F1-score assess how often a model makes correct predictions, they do not capture how confident the model is in those predictions. In high-stakes domains such as clinical EEG analysis, knowing how much to trust a model’s probability estimates is critical. This is where calibration becomes essential.
+
+A well-calibrated model produces probability estimates that correspond to the actual likelihood of being correct. For example, among all predictions with a confidence of 0.8, approximately 80\% should be correct. However, deep neural networks often tend to be overconfident, especially under distribution shifts, leading to poor decision reliability even when the accuracy is high.
+
+Expected Calibration Error (ECE) is a scalar metric that quantifies the mismatch between confidence and accuracy across all predictions~\cite{calibration1}. It divides predictions into bins based on their confidence scores and computes the average absolute difference between accuracy and confidence within each bin~\cite{ece}.
+
+Formally, let \( B_1, B_2, \ldots, B_K \) denote bins of predicted confidence values (e.g., 0.0--0.1, 0.1--0.2, \ldots, 0.9--1.0), where \( K \) is the number of bins. For each bin \( B_k \), let:
+\begin{itemize}
+    \item \( \text{acc}(B_k) \): accuracy of predictions in bin \( B_k \)
+    \item \( \text{conf}(B_k) \): average confidence of predictions in bin \( B_k \)
+    \item \( |B_k| \): number of samples in bin \( B_k \)
+\end{itemize}
+
+Then the ECE is defined as~\cite{ece}:
+
+\begin{equation}
+\text{ECE} = \sum_{k=1}^{K} \frac{|B_k|}{n} \cdot \left| \text{acc}(B_k) - \text{conf}(B_k) \right|
+\end{equation}
+
+where \( n \) is the total number of predictions.
+
+A perfectly calibrated model would yield \( \text{acc}(B_k) = \text{conf}(B_k) \) for all bins, resulting in \( \text{ECE} = 0 \). Higher values of ECE indicate greater miscalibration.
+
+\subsubsection{Reliability Diagram}
+A reliability diagram can be used to visually assess calibration. This diagram plots accuracy versus confidence for each bin. The reliability diagram shown in Figure~\ref{fig:reliability} visually depicts the calibration performance of a probabilistic classifier. The horizontal axis represents the model's predicted confidence scores, grouped into discrete bins. The vertical axis indicates the actual accuracy achieved by the predictions within each bin, that is the proportion of samples that were correctly classified among those for which the model predicted a given level of confidence.
+
+\begin{figure}[h]
+	\centering
+    \def\svgwidth{220pt}
+ 	\import{gfx/}{reliability_diagram.pdf_tex} 	 	
+	\caption[Reliability diagram]{Reliability diagram: The x-axis represents the predicted confidence, and the y-axis represents the actual accuracy in each bin. The diagonal line indicates perfect calibration. The Expected Calibration Error (ECE) is computed as the area-weighted average gap between the bars and the diagonal.}
+	\label{fig:reliability}
+\end{figure}
+
+The dashed diagonal line corresponds to perfect calibration. A model is said to be perfectly calibrated if, for example, among all predictions made with 70\% confidence, exactly 70\% are correct. Therefore, in a well-calibrated model, the accuracy bars in the plot should lie close to this diagonal line.
+
+In the displayed diagram, however, several bars fall noticeably below the diagonal. This indicates overconfidence: the model frequently predicts high probabilities for its decisions, but those predictions are correct less often than expected. For example, in the 0.7 confidence bin, the model may be correct only 60\% of the time, revealing a gap between expected and actual correctness.
+
+By aggregating such deviations across all bins, the Expected Calibration Error (ECE) quantifies the average discrepancy between confidence and accuracy~\cite{ece}. The farther the bars deviate from the diagonal, the larger the ECE and the worse the model's calibration. This figure thus provides an intuitive, diagnostic tool for identifying where the model is most miscalibrated and how prediction confidence aligns with real-world correctness.

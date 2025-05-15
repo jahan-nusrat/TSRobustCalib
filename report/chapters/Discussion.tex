@@ -1,0 +1,42 @@
+%*****************************************
+\chapter{Discussion}
+\label{ch:discussion}
+%*****************************************
+\section{Key Findings}
+This work systematically examined how architectural and training strategies affect the robustness and calibration of neural networks for EEG-based seizure classification. Using both clean and corrupted variants of the TUSZ dataset, several key insights emerged.
+
+First, models promoting output diversity, such as MIMO, demonstrated superior robustness and calibration across nearly all evaluation conditions. Its implicit ensembling mechanism enabled it to maintain strong F1 scores (e.g., 33.7\% under clean conditions) and low calibration error (ECE = 0.10), even as input conditions varied (shown in Table~\ref{tab:clean_results}).
+
+Second, latent-space regularization via Manifold Mixup improved calibration across a broad range of corruptions, particularly under spectral perturbations, achieving ECE 0.12 and outperforming other models on spectral augmentation at severity level 2 (F1 = 32.2\%) (shown in Table~\ref{tab:spectral_aug}).
+
+Third, combining MIMO with Mixup did not yield additive benefits. Despite peaking in performance on certain perturbations (e.g., F1 = 16.3\% under channel dropout S2), the combined model underperformed both of its components on average, suggesting optimization conflicts when diverse regularization strategies interact.
+
+Finally, entropy-based test-time adaptation (TTA) consistently improved calibration, particularly for overconfident models. For example, ResNet-18’s ECE improved from 0.18 to 0.12 after TTA on clean data, with no loss in F1-score. This reinforces TTA’s utility as a general-purpose post-hoc correction mechanism.
+
+\section{Robustness and Calibration under Distribution Shifts}
+Input corruptions, such as signal dropout, Gaussian noise, and spectral distortion revealed stark differences in how models generalize beyond clean training distributions. Among all evaluated methods, MIMO exhibited the most stable performance, with relatively mild degradation in both F1 and ECE as corruption severity increased. For instance, under spectral augmentation at severity level 4 (Table~\ref{tab:spectral_aug}), it retained an F1-score of 31.2\%.
+
+This robustness results from MIMO’s design, which encourages predictive diversity via multi-head subnetworks. These subnetworks act as independent estimators, reducing the model’s tendency to commit to brittle, overconfident decisions under noise or perturbation.
+
+Manifold Mixup, on the other hand, offered stronger resilience under continuous or additive distortions, such as Gaussian noise, where it achieved high F1-scores (e.g., 30.5\% at severity level 1) and low ECE (0.05) (Table~\ref{tab:gaussian_noise}). However, its performance dropped more sharply under spatially structured corruptions like channel or signal dropout, where its reliance on smooth latent transitions fail to capture the abrupt spatial disruptions.
+
+Interestingly, the MIMO + Mixup model, despite combining the strengths of both methods, showed inconsistent behavior. While it achieved strong results under certain conditions, its calibration often degraded at higher severities (e.g., ECE = 0.25 under channel dropout S3), suggesting interference between ensemble disagreement and representation smoothing. These findings emphasize that robustness strategies are not always complementary when combined without careful integration.
+
+\section{Test-Time Adaptation via Entropy Minimization}
+Entropy minimization at test time was applied to recalibrate model confidence under distribution shift. Its effect was most pronounced for overconfident models, particularly ResNet-18, which saw ECE improvements of up to 0.08 (e.g., from 0.23 to 0.16 under signal dropout severity 3), without degrading the F1-score (Table~\ref{tab:tta_signal}).
+
+Surprisingly, TTA also improved calibration for models that were already well-calibrated. For MIMO, ECE dropped from 0.12 to 0.05 under Gaussian noise S3, and F1 increased from 22.6\% to 24.7\% (Table~\ref{tab:gaussian_noise}). These effects suggest that entropy-based adaptation can act not only as a confidence amplifier but also as a corrector for underconfident or inconsistent predictions caused by batch norm shifts or distributional noise.
+
+The mechanism behind TTA’s success appears twofold. First, entropy minimization encourages confident predictions, smoothing indecisive outputs. Second, it adapts internal statistics, particularly batch normalization parameters, without modifying model weights. This allows TTA to reconcile minor domain shifts with minimal computational overhead, making it suitable for real-world deployment in streaming EEG systems.
+
+Importantly, TTA's improvements were consistent across architectures, highlighting its robustness as a calibration tool. However, the magnitude of gain was architecture-dependent, larger for models that were initially overconfident and modest for models like MIMO or Mixup-trained variants.
+
+In conclusion, the interaction between training-time and test-time strategies is not merely additive. While models like MIMO offer robustness by design, mechanisms like TTA offer lightweight, adaptive corrections. Together, they form a complementary toolkit for addressing real-world uncertainty in clinical time-series classification.
+
+\section{Limitations}
+\label{sec:limitations}
+While the proposed MIMO-based approach showed improvements in robustness and calibration, there is an important limitation to note regarding the evaluation setup.
+
+Specifically, Gaussian noise was used both as a training-time augmentation (applied in a stochastic, channel-wise manner with $\sigma=0.01$ and $p=0.3$) and also as one of the test-time corruptions for robustness evaluation. Although their application differs—localized and stochastic during training versus global and deterministic during testing, this overlap introduces a form of data leakage. Consequently, the model's robustness performance under Gaussian noise corruptions may be positively biased.
+
+Future work should ensure a strict separation between training augmentations and evaluation corruptions to avoid such leakage and ensure a more rigorous robustness assessment.

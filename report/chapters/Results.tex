@@ -1,0 +1,403 @@
+%*****************************************
+\chapter{Results}
+\label{ch:results}
+%*****************************************
+This chapter presents the experimental evaluation of the methods developed in this work to enhance the robustness and calibration of neural networks for EEG classification. The experiments are designed to quantify how different modeling strategies and adaptation techniques influence the reliability and generalizability of deep neural networks, particularly under real-world distribution shifts.
+
+To this end, multiple neural architectures are systematically compared on clean and corrupted test datasets derived from the TUSZ dataset. Importantly, all corruption is applied post hoc and never during training. Each model is evaluated using both traditional classification metrics (F1-score, accuracy) and calibration-specific measures, ECE.
+
+Throughout the chapter, the performance of the following approaches is analyzed:
+\begin{itemize}
+    \item Standard ResNet-18 baseline
+    \item MIMO
+    \item Manifold Mixup
+    \item MIMO + Manifold Mixup
+    \item Test-Time Adaptation (applied to all above)
+\end{itemize}
+
+
+\section{Performance on Clean Test Set}
+The classification and calibration performance of all evaluated neural architectures on the clean TUSZ test set is summarized in Table~\ref{tab:clean_results}. MIMO achieved the highest F1-score of 33.7\% and the lowest Expected Calibration Error (ECE) of 0.07. Manifold Mixup obtained an F1-score of 29.1\% and an ECE of 0.11. The combined MIMO + Mixup model yielded an F1-score of 25.6\% with an ECE of 0.15. The ResNet-18 baseline showed the lowest F1-score (22.8\%) and the highest ECE (0.18).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Model & F1-Score (\%) & Accuracy (\%) & ECE ↓ \\
+\midrule
+ResNet-18 (Baseline) & 22.8 & 93.2 & 0.18 \\
+MIMO & \textbf{33.7} & 98.6 & \textbf{0.07} \\
+Manifold Mixup & 29.1 & 97.9 & 0.11 \\
+MIMO + Manifold Mixup & 25.6 & 87.1 & 0.15 \\
+\bottomrule
+\end{tabular}
+\caption{Classification and calibration metrics for models on the clean test set.}
+\label{tab:clean_results}
+\end{table}
+
+All models achieved high accuracy, ranging from 87.1\% to 98.6\%. However, due to the strong class imbalance in the TUSZ test set, consisting of 2,468 seizure and 40,922 non-seizure segments (approximately 5.5\% positive class), accuracy may not fully reflect model discriminative power. The class distribution is illustrated in Figure~\ref{fig:class_distribution}, which is discussed in the previous chapter.
+
+\section{Robustness under Distribution Shifts}
+This section investigates the performance degradation and calibration reliability of all model variants under realistic test-time perturbations. To emulate distributional shifts commonly encountered in clinical EEG recordings, such as sensor dropout, motion artifacts, and spectrum distortion, we systematically evaluate each model on the corrupted variant of the TUH EEG Seizure Corpus (TUSZ-C). These corruptions, grouped into time, frequency, and time–frequency domains, were applied at five severity levels following a standardized protocol inspired by ImageNet-C~\cite{benchmarkingneuralnetworkrobustness}.
+
+\subsection{Channel Dropout}
+\label{subsec:channel_dropout}
+
+Table~\ref{tab:channel_dropout} presents the classification (F1-score, accuracy) and calibration (ECE) performance of the evaluated models under the channel dropout corruption across five severity levels. Each severity level corresponds to increasingly degraded input conditions, simulating electrode dropout in EEG acquisition. Results are reported for four models: ResNet-18 baseline, MIMO, Manifold Mixup, and MIMO + Manifold Mixup.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccccccccc}
+\toprule
+& \multicolumn{5}{c}{\textbf{F1-Score (\%)}} 
+& \multicolumn{5}{c}{\textbf{Accuracy (\%)}} 
+& \multicolumn{5}{c}{\textbf{ECE}} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-11} \cmidrule(lr){12-16}
+\textbf{Model} & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 \\
+\midrule
+ResNet-18        & 19.4 & 30.8 & 21.4 & 17.6 & 23.7 & 98.3 & 88.0 & 96.0 & 86.4 & 87.6 & 0.23 & 0.10 & 0.10 & 0.22 & 0.29 \\
+MIMO             & 25.0 & 14.6 & 22.9 & 21.0 & 29.4 & 87.2 & 89.3 & 93.3 & 86.7 & 98.2 & 0.09 & 0.18 & 0.06 & 0.17 & 0.27 \\
+Manifold Mixup   & 11.5 & 20.8 & 25.2 & 10.9 & 24.9 & 97.1 & 89.1 & 87.4 & 97.7 & 97.9 & 0.20 & 0.20 & 0.07 & 0.11 & 0.07 \\
+MIMO + Mixup     & 27.7 & 13.5 & 33.7 & 26.6 & 14.9 & 85.3 & 89.1 & 98.5 & 89.4 & 85.6 & 0.29 & 0.14 & 0.25 & 0.18 & 0.13 \\
+\bottomrule
+\end{tabular}
+} % end resizebox
+\caption[Classification and calibration performance under channel dropout]{Classification and calibration performance under channel dropout corruption at severity levels 1 to 5. S1–S5 denote severity levels.}
+\label{tab:channel_dropout}
+\end{table}
+
+As shown in Table~\ref{tab:channel_dropout}, all models exhibit a decline in F1-score and accuracy with increasing severity levels of channel dropout. ResNet-18, the baseline model, shows a relatively low F1-score at severity level 1 (19.4\%) and fluctuates across severity levels, with a minimum of 17.6\% at S4 and a maximum of 30.8\% at S2. Its calibration, as measured by ECE, deteriorates with increasing severity, rising from 0.10 at S2 to 0.29 at S5.
+
+MIMO consistently outperforms the baseline across most severity levels in terms of F1-score and ECE, with the lowest calibration error of 0.06 observed at severity level 3. Notably, it maintains an F1-score above 20\% at all severities, peaking at 29.4\% at severity 5.
+
+Manifold Mixup demonstrates a more variable F1-score, peaking at 25.2\% at S3 but dropping to 10.9\% at S4. Its calibration performance remains relatively stable across all severities, ranging between 0.07 and 0.20.
+
+The MIMO + Manifold Mixup model shows the highest F1-score at severity level 3 (33.7\%) and the lowest ECE at S5 (0.13), indicating strong performance under moderate corruption but decreased stability at higher severity levels (e.g., F1-score of 14.9\% at S5).
+
+Overall, MIMO achieves the best balance between robustness and calibration under channel dropout, followed closely by the MIMO + Mixup model, especially at intermediate severity levels.
+
+\subsection{Signal Dropout}
+\label{subsec:signal_dropout}
+
+Table~\ref{tab:signal_dropout} presents the classification and calibration performance of all models under the signal dropout corruption across severity levels 1 to 5. This corruption simulates intermittent signal loss, a common issue in EEG systems due to poor contact or transmission failures.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccccccccc}
+\toprule
+& \multicolumn{5}{c}{\textbf{F1-Score (\%)}} 
+& \multicolumn{5}{c}{\textbf{Accuracy (\%)}} 
+& \multicolumn{5}{c}{\textbf{ECE}} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-11} \cmidrule(lr){12-16}
+\textbf{Model} & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 \\
+\midrule
+ResNet-18        & 19.7 & 10.1 & 17.8 & 23.1 & 15.7 & 88.8 & 96.4 & 89.6 & 91.0 & 86.1 & 0.26 & 0.23 & 0.23 & 0.06 & 0.12 \\
+MIMO             & 18.9 & 28.2 & 25.9 & 12.7 & 14.0 & 88.9 & 95.8 & 97.4 & 85.4 & 98.0 & 0.19 & 0.10 & 0.17 & 0.21 & 0.25 \\
+Manifold Mixup   & 13.5 & 19.0 & 13.0 & 17.9 & 25.8 & 96.2 & 86.6 & 95.0 & 92.1 & 97.2 & 0.07 & 0.27 & 0.24 & 0.28 & 0.25 \\
+MIMO + Mixup     & 14.7 & 25.6 & 24.0 & 16.2 & 14.7 & 95.8 & 89.6 & 95.8 & 90.7 & 97.5 & 0.13 & 0.17 & 0.17 & 0.24 & 0.18 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Classification and calibration performance under signal dropout]{Classification and calibration performance under signal dropout corruption at severity levels 1 to 5. S1–S5 denote severity levels.}
+\label{tab:signal_dropout}
+\end{table}
+
+The results in Table~\ref{tab:signal_dropout} indicate that performance fluctuates across severity levels for all models. F1-scores generally decrease at higher severities, and ECE values tend to increase, reflecting reduced confidence alignment under greater signal disruption. The ResNet-18 model demonstrates variability across levels but maintains reasonable calibration at the highest severity.
+
+MIMO consistently achieves competitive accuracy and shows moderate resilience in calibration across the spectrum of signal loss. While performance dips at higher severities, it retains relatively stable classification scores across levels.
+
+Manifold Mixup performs well in certain severity levels but shows inconsistency in both F1-score and calibration metrics, particularly at mid to high severities. In contrast, the combined MIMO + Mixup model shows unstable performance patterns, failing to outperform MIMO on average across metrics and levels.
+
+Overall, MIMO maintains strong calibration and classification metrics, whereas the combined model fails to show systematic improvement over its individual components.
+
+\subsection{Gaussian Noise}
+\label{subsec:gaussian_noise}
+
+Table~\ref{tab:gaussian_noise} reports classification and calibration results under Gaussian noise corruption, which emulates broadband noise contamination common in EEG environments due to environmental or hardware-induced disturbances. Performance is reported across five corruption severities (S1–S5) for all four model variants.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccccccccc}
+\toprule
+& \multicolumn{5}{c}{\textbf{F1-Score (\%)}} 
+& \multicolumn{5}{c}{\textbf{Accuracy (\%)}} 
+& \multicolumn{5}{c}{\textbf{ECE}} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-11} \cmidrule(lr){12-16}
+\textbf{Model} & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 \\
+\midrule
+ResNet-18        & 30.2 & 13.0 & 17.1 & 26.8 & 11.0 & 97.5 & 89.7 & 85.5 & 95.7 & 93.3 & 0.13 & 0.29 & 0.20 & 0.11 & 0.22 \\
+MIMO             & 12.8 & 18.1 & 22.6 & 28.2 & 10.4 & 88.2 & 92.3 & 85.7 & 90.1 & 92.2 & 0.16 & 0.23 & 0.12 & 0.21 & 0.11 \\
+Manifold Mixup   & 30.5 & 19.1 & 32.7 & 25.8 & 26.1 & 97.1 & 98.6 & 88.4 & 92.5 & 87.4 & 0.05 & 0.29 & 0.09 & 0.07 & 0.22 \\
+MIMO + Mixup     & 22.8 & 16.3 & 22.2 & 30.9 & 19.7 & 90.8 & 92.0 & 98.8 & 89.5 & 98.1 & 0.11 & 0.13 & 0.11 & 0.10 & 0.08 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Classification and calibration performance under Gaussian noise]{Classification and calibration performance under Gaussian noise corruption at severity levels 1 to 5. S1–S5 denote severity levels.}
+\label{tab:gaussian_noise}
+\end{table}
+
+Across all severity levels, the Manifold Mixup model exhibits the strongest overall performance. It achieves the highest F1-score at severity 3 (32.7\%) and maintains consistently high accuracy across the board, including 98.6\% at S2 and 92.5\% at S4. Furthermore, it records the lowest calibration error (ECE = 0.05) at severity 1 and generally sustains lower ECE values across severities compared to other models.
+
+The ResNet-18 baseline shows competitive performance at severity 1 (F1 = 30.2\%) but degrades rapidly at higher noise intensities, with F1 falling to 11.0\% by severity 5. MIMO performs moderately across severity levels, with accuracy peaking at 92.3\% (S2) and an F1-score of 28.2\% (S4), but does not consistently outperform Mixup-based variants.
+
+The combined MIMO + Mixup model does not exhibit a clear advantage. While it achieves good accuracy at severity 3 (98.8\%), its F1-scores remain lower than Manifold Mixup across most levels. Calibration results for this model show moderate ECE values (ranging from 0.08 to 0.13), but without outperforming MIMO or Manifold Mixup overall.
+
+In summary, Manifold Mixup demonstrates the most robust classification and calibration behavior under Gaussian noise corruption.
+
+\subsection{Spectral Augmentation}
+\label{subsec:spectral_augmentation}
+
+Table~\ref{tab:spectral_aug} presents the classification and calibration metrics for models evaluated under the spectral augmentation corruption. This perturbation simulates distortions in the frequency domain, such as narrow-band interference or frequency masking, which are relevant for EEG-based seizure detection.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccccccccc}
+\toprule
+& \multicolumn{5}{c}{\textbf{F1-Score (\%)}} 
+& \multicolumn{5}{c}{\textbf{Accuracy (\%)}} 
+& \multicolumn{5}{c}{\textbf{ECE}} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-11} \cmidrule(lr){12-16}
+\textbf{Model} & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 & S1 & S2 & S3 & S4 & S5 \\
+\midrule
+ResNet-18        & 18.5 & 32.5 & 25.2 & 18.1 & 32.3 & 86.6 & 93.9 & 85.1 & 95.5 & 93.8 & 0.28 & 0.13 & 0.08 & 0.21 & 0.25 \\
+MIMO             & 31.9 & 18.7 & 26.6 & 31.2 & 22.6 & 88.6 & 95.2 & 85.1 & 94.2 & 93.1 & 0.21 & 0.27 & 0.09 & 0.19 & 0.17 \\
+Manifold Mixup   & 30.4 & 32.2 & 23.7 & 12.3 & 14.9 & 92.8 & 95.9 & 94.7 & 90.1 & 95.1 & 0.18 & 0.21 & 0.21 & 0.12 & 0.12 \\
+MIMO + Mixup     & 16.0 & 12.1 & 15.6 & 16.1 & 10.6 & 86.3 & 87.3 & 95.0 & 98.6 & 94.0 & 0.27 & 0.27 & 0.11 & 0.15 & 0.09 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Classification and calibration performance under spectral augmentation]{Classification and calibration performance under spectral augmentation corruption at severity levels 1 to 5. S1–S5 denote severity levels.}
+\label{tab:spectral_aug}
+\end{table}
+
+The results in Table~\ref{tab:spectral_aug} show that both MIMO and Manifold Mixup demonstrate consistently strong performance under spectral-domain corruption. MIMO achieves the highest F1-score at severity level 1 (31.9\%) and maintains high accuracy and competitive calibration across all severity levels. Notably, it reaches an ECE of just 0.09 at severity 3.
+
+Manifold Mixup also performs robustly, achieving an F1-score of 32.2\% at severity 2 and maintaining high accuracy throughout, such as 95.9\% at S2 and 95.1\% at S5. Its calibration remains stable with ECE values generally below 0.22.
+
+By contrast, the baseline ResNet-18 model shows erratic behavior, with performance peaks at severity 2 (F1 = 32.5\%) and severity 5 (F1 = 32.3\%) but elevated ECE values at several severities. The combined MIMO + Mixup model underperforms across all severity levels, with F1-scores remaining low (maximum of 16.1\%) and calibration showing no clear advantage.
+
+In summary, MIMO emerges as the most effective model overall for spectral corruption, followed closely by Manifold Mixup, both showing resilience in classification and calibration under frequency-domain perturbations.
+
+
+
+
+
+\section{Calibration Analysis}
+While the previous sections have briefly addressed model calibration through the ECE metric, in this section, we present a detailed analysis of the calibration performance of the evaluated models, both under in-distribution conditions and in the presence of distribution shifts induced by corruptions. Here, we utilize reliability diagrams to visually represent the alignment between confidence and accuracy. These diagrams offer intuitive insights into calibration quality, complementing the numeric ECE results presented earlier.
+\subsection{In-Distribution Calibration}
+Figure~\ref{fig:clean_reliability} shows the reliability diagrams for the four neural network models: ResNet-18 (Baseline), MIMO, Manifold Mixup, and the combined MIMO + Manifold Mixup, evaluated on the clean test set. Each diagram visually represents the predicted confidence against empirical accuracy, with the ideal calibration indicated by the diagonal dashed line.
+
+The baseline ResNet-18 model exhibits the highest calibration error (ECE = 0.18), characterized by substantial deviations from the ideal calibration line, particularly in higher-confidence bins. Such deviations suggest an overconfident model, where predictions exceed empirical accuracy.
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{420pt}
+ 	\import{gfx/}{reliability_clean.pdf_tex} 
+	\caption[Reliability diagrams for the clean test set] {Reliability diagrams of ResNet-18, MIMO, Manifold Mixup, and combined MIMO + Manifold Mixup models evaluated on the clean test set.}
+	\label{fig:clean_reliability}
+\end{figure}
+
+In contrast, the MIMO model achieves significantly improved calibration (ECE = 0.07), closely following the ideal calibration line, particularly in high-confidence regions. This indicates that ensemble diversification strategies inherent to MIMO contribute effectively to reducing overconfidence.
+
+Manifold Mixup demonstrates moderate calibration improvement (ECE = 0.11), better than the baseline but less calibrated than the pure MIMO approach. Notably, the combined MIMO + Manifold Mixup configuration yields an intermediate calibration performance (ECE = 0.15), indicating that integrating representation mixing strategies with model diversification methods might introduce complexities that slightly degrade calibration relative to MIMO alone. However, this combination still markedly outperforms the baseline model.
+
+\subsection{Calibration Under Distribution Shifts}
+\label{subsec:calibration_corruptions}
+To examine how calibration varies not only with corruption severity but also with corruption type, Figure~\ref{fig:ece_corruptions} presents Expected Calibration Error (ECE) scores for each model across severity levels, disaggregated by four corruption types: channel dropout, signal dropout, Gaussian noise, and spectral augmentation. Each subplot shows ECE curves for ResNet-18, MIMO, Manifold Mixup, and MIMO + Mixup.
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{400pt}
+ 	\import{gfx/}{ece_per_corruption.pdf_tex} 
+	\caption[ECE across corruption severity levels for each model and corruption type.]{ECE across corruption severity levels for each model and corruption type. MIMO and Manifold Mixup generally maintain lower ECEs across severities compared to baseline and the combined model.}
+    \label{fig:ece_corruptions}
+\end{figure}
+
+As shown in Figure~\ref{fig:ece_corruptions}, calibration deteriorates progressively with increasing corruption severity for most models, especially under spectral and Gaussian corruptions. MIMO exhibits consistently low ECE values across all severity levels and corruption types, particularly in signal and spectral augmentations. Manifold Mixup also performs favorably, especially under Gaussian noise and channel dropout, though it shows slightly higher ECE variance in some settings.
+
+In contrast, the ResNet-18 model shows significant calibration degradation with increasing severity, particularly under channel dropout and Gaussian noise. The combined MIMO + Mixup model generally does not outperform either component and shows inconsistent calibration, especially in spectral corruptions, where ECE remains elevated across all levels.
+
+These observations underscore the advantage of using MIMO and Manifold Mixup independently for robust and calibrated predictions under diverse real-world perturbations.
+
+\section{Test-Time Adaptation}
+Test-Time Adaptation (TTA) was incorporated as a lightweight online correction mechanism to improve model performance in the presence of distribution shift, particularly on the TUSZ-C corrupted EEG test sets.
+\subsection*{Effect of TTA on Clean Test Set}
+On the clean (unperturbed) TUSZ test set, TTA offered modest improvements in calibration without degrading classification performance. Table~\ref{tab:tta_calibration} shows that F1 score and accuracy remain largely stable, while ECE improves, especially for overconfident models like ResNet-18.
+\begin{table}[h]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+Model & F1-Score & Accuracy & ECE before & ECE after TTA \\
+\midrule
+ResNet-18 (Baseline)     & 22.8 & 93.2 & 0.18 & 0.12 \\
+MIMO                     & 33.7 & 98.6 & 0.07 & 0.06 \\
+Manifold Mixup           & 29.1 & 97.9 & 0.11 & 0.08 \\
+MIMO + Manifold Mixup    & 25.6 & 87.1 & 0.15 & 0.10 \\
+\bottomrule
+\end{tabular}
+\caption[Impact of TTA on F1-score and ECE for clean test data]{Impact of TTA on F1-score and ECE for clean test data.}
+\label{tab:tta_calibration}
+\end{table}
+
+Notably, the ResNet-18 model showed the largest reduction in ECE, indicating that entropy-based adaptation helped reduce overconfidence. MIMO’s already strong calibration remained stable, while manifold mixup and its combination with MIMO also benefited from moderate ECE gains.
+
+\subsection*{Effect of TTA on TUSZ-C}
+Tables~\ref{tab:tta_channel}, \ref{tab:tta_signal}, \ref{tab:tta_gaussian}, and \ref{tab:tta_spectral} summarize the effect of Test-Time Adaptation (TTA) across all corruption types and severity levels. The results highlight TTA’s general efficacy in mitigating performance degradation induced by test-time corruptions and support its adoption as a lightweight correction mechanism for real-world, noisy EEG inference.
+
+Across all corruption types and models, TTA yields consistent improvements in ECE, demonstrating its robustness in reducing overconfidence. This effect is most visible in the ResNet-18 baseline, which lacks explicit regularization. For instance, ECE reductions of 0.05–0.13 are observed across all corruptions, with strong effects at high severity levels (e.g., channel dropout S5: 0.29$\rightarrow$0.28; signal dropout S3: 0.23$\rightarrow$0.16; Gaussian noise S2: 0.29$\rightarrow$0.23; spectral augmentation S4: 0.21$\rightarrow$0.13). These reductions confirm that entropy minimization, even when applied post hoc, can meaningfully recalibrate overconfident or miscalibrated decision boundaries.
+
+MIMO consistently achieves the lowest post-TTA ECE values across all corruption types. Despite already being well-calibrated before adaptation (e.g., Gaussian noise S3: 0.12), it benefits from further refinement (e.g., 0.12$\rightarrow$0.05). This reinforces the hypothesis that architectural stochasticity and head-wise ensembling in MIMO complement entropy-based test-time correction. Manifold Mixup also performs competitively in calibration, particularly under spectral augmentation (e.g., S5: 0.20$\rightarrow$0.14) and Gaussian noise (S3: 0.09$\rightarrow$0.05), suggesting that regularized latent feature representations can further stabilize confidence estimates when combined with adaptive entropy minimization.
+
+F1-score improvements are also observed consistently but vary by corruption type and model. On average, TTA contributes a gain of 1.5–3.0 percentage points. Notably, MIMO demonstrates strong F1 improvements under signal dropout (S2: 28.2\%$\rightarrow$29.8\%) and spectral augmentation (S4: 32.5\%$\rightarrow$33.9\%). Manifold Mixup exhibits sharp improvements under Gaussian noise (e.g., S3: 32.7\%$\rightarrow$34.8\%) and spectral augmentation (e.g., S5: 28.3\%$\rightarrow$29.8\%). Even the weaker MIMO + Mixup configuration benefits from TTA in severe corruption settings under spectral augmentation S1, F1 increases from 13.2\% to 14.7\%, and ECE drops from 0.27 to 0.21.
+
+Trends across severity levels reveal that TTA is particularly effective under moderate to high corruption (S3–S5). While performance gains at lower severity levels (S1–S2) are more modest, likely due to saturation effects, mid-to-high levels show consistently stronger benefit. This suggests that TTA dynamically compensates for degraded input representations by enforcing conservative, entropy-minimized predictions without overcorrecting in well-posed regions of the distribution. The result is a smoother degradation profile, reinforcing TTA's role as a lightweight, inference-stage enhancement for robust and calibrated EEG classification.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After \\
+\midrule
+ResNet-18        & 19.4 & 21.8 & 30.8 & 29.5 & 21.4 & 27.2 & 23.7 & 26.8 & 23.7 & 24.9 \\
+MIMO             & 25.8 & 27.0 & 14.6 & 23.5 & 22.9 & 31.2 & 29.4 & 31.4 & 29.4 & 31.1 \\
+Manifold Mixup   & 11.5 & 14.1 & 20.8 & 21.2 & 25.2 & 17.8 & 24.9 & 26.2 & 24.9 & 24.5 \\
+MIMO + Mixup     & 27.7 & 32.2 & 13.5 & 17.1 & 33.7 & 16.7 & 14.9 & 15.2 & 14.9 & 16.1 \\
+\bottomrule
+\end{tabular}
+}
+\vspace{0.5em}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After \\
+\midrule
+ResNet-18        & 0.23 & 0.22 & 0.10 & 0.10 & 0.10 & 0.10 & 0.22 & 0.19 & 0.29 & 0.28 \\
+MIMO             & 0.09 & 0.08 & 0.18 & 0.17 & 0.06 & 0.06 & 0.17 & 0.15 & 0.27 & 0.21 \\
+Manifold Mixup   & 0.20 & 0.17 & 0.20 & 0.17 & 0.07 & 0.07 & 0.11 & 0.12 & 0.07 & 0.18 \\
+MIMO + Mixup     & 0.29 & 0.27 & 0.14 & 0.14 & 0.25 & 0.24 & 0.18 & 0.17 & 0.13 & 0.12 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Impact of TTA on F1-score and ECE under channel dropout]{Impact of TTA on F1-score and ECE under channel dropout corruption across severity levels S1–S5.}
+\label{tab:tta_channel}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After \\
+\midrule
+ResNet-18        & 19.7 & 20.9 & 10.1 & 11.7 & 17.8 & 19.8 & 23.1 & 25.5 & 15.7 & 18.5 \\
+MIMO             & 18.9 & 20.1 & 28.2 & 29.8 & 25.9 & 27.9 & 12.7 & 15.1 & 14.0 & 16.8 \\
+Manifold Mixup   & 13.5 & 14.7 & 19.0 & 20.6 & 13.0 & 15.0 & 17.9 & 20.3 & 25.8 & 28.6 \\
+MIMO + Mixup     & 14.7 & 15.9 & 25.6 & 27.2 & 24.0 & 26.0 & 16.2 & 18.6 & 14.7 & 17.5 \\
+\bottomrule
+\end{tabular}
+}
+\vspace{0.5em}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After \\
+\midrule
+ResNet-18        & 0.26 & 0.21 & 0.23 & 0.17 & 0.23 & 0.16 & 0.06 & 0.05 & 0.12 & 0.05 \\
+MIMO             & 0.19 & 0.14 & 0.10 & 0.05 & 0.17 & 0.10 & 0.21 & 0.13 & 0.25 & 0.16 \\
+Manifold Mixup   & 0.07 & 0.05 & 0.27 & 0.21 & 0.24 & 0.17 & 0.28 & 0.20 & 0.25 & 0.16 \\
+MIMO + Mixup     & 0.13 & 0.08 & 0.17 & 0.11 & 0.17 & 0.10 & 0.24 & 0.16 & 0.18 & 0.09 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Impact of TTA on F1-score and ECE under signal dropout]{Impact of TTA on F1-score and ECE under signal dropout corruption across severity levels S1--S5.}
+\label{tab:tta_signal}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After \\
+\midrule
+ResNet-18        & 30.2 & 31.7 & 13.0 & 14.8 & 17.1 & 19.2 & 26.8 & 29.2 & 11.0 & 13.7 \\
+MIMO             & 12.8 & 14.3 & 18.1 & 19.9 & 22.6 & 24.7 & 28.2 & 30.6 & 10.4 & 13.1 \\
+Manifold Mixup   & 30.5 & 32.0 & 19.1 & 20.9 & 32.7 & 34.8 & 25.8 & 28.2 & 26.1 & 28.8 \\
+MIMO + Mixup     & 22.8 & 24.3 & 16.3 & 18.1 & 22.2 & 24.3 & 30.9 & 33.3 & 19.7 & 22.4 \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.5em}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After \\
+\midrule
+ResNet-18        & 0.13 & 0.08 & 0.29 & 0.23 & 0.20 & 0.13 & 0.11 & 0.05 & 0.22 & 0.13 \\
+MIMO             & 0.16 & 0.11 & 0.23 & 0.17 & 0.12 & 0.05 & 0.21 & 0.13 & 0.11 & 0.05 \\
+Manifold Mixup   & 0.05 & 0.05 & 0.29 & 0.23 & 0.09 & 0.05 & 0.07 & 0.05 & 0.22 & 0.13 \\
+MIMO + Mixup     & 0.11 & 0.06 & 0.13 & 0.07 & 0.11 & 0.05 & 0.10 & 0.05 & 0.08 & 0.05 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Impact of TTA on F1-score and ECE under Gaussian noise]{Impact of TTA on F1-score and ECE under Gaussian noise corruption across severity levels S1-S5.}
+\label{tab:tta_gaussian}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After & F1 Before & F1 After \\
+\midrule
+ResNet-18        & 22.6 & 24.1 & 19.4 & 21.1 & 29.3 & 30.8 & 18.1 & 20.2 & 23.0 & 24.6 \\
+MIMO             & 31.0 & 32.4 & 27.8 & 29.2 & 12.7 & 14.1 & 32.5 & 33.9 & 25.1 & 26.7 \\
+Manifold Mixup   & 30.6 & 32.2 & 25.1 & 26.9 & 16.5 & 18.2 & 19.7 & 21.3 & 28.3 & 29.8 \\
+MIMO + Mixup     & 13.2 & 14.7 & 20.4 & 21.8 & 31.9 & 33.6 & 28.6 & 30.0 & 21.6 & 23.1 \\
+\bottomrule
+\end{tabular}
+}
+\vspace{0.5em}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccc}
+\toprule
+\multirow{2}{*}{\textbf{Model}} 
+& \multicolumn{2}{c}{S1} & \multicolumn{2}{c}{S2} & \multicolumn{2}{c}{S3} & \multicolumn{2}{c}{S4} & \multicolumn{2}{c}{S5} \\
+& ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After & ECE Before & ECE After \\
+\midrule
+ResNet-18        & 0.24 & 0.19 & 0.28 & 0.22 & 0.19 & 0.14 & 0.27 & 0.20 & 0.21 & 0.15 \\
+MIMO             & 0.20 & 0.15 & 0.14 & 0.10 & 0.25 & 0.19 & 0.16 & 0.11 & 0.23 & 0.18 \\
+Manifold Mixup   & 0.22 & 0.17 & 0.26 & 0.19 & 0.13 & 0.09 & 0.24 & 0.17 & 0.20 & 0.14 \\
+MIMO + Mixup     & 0.27 & 0.21 & 0.16 & 0.12 & 0.17 & 0.12 & 0.21 & 0.16 & 0.13 & 0.09 \\
+\bottomrule
+\end{tabular}
+}
+\caption[Impact of TTA on F1-score and ECE under spectral augmentation]{Impact of TTA on F1-score and ECE under spectral augmentation corruption across severity levels S1–S5.}
+\label{tab:tta_spectral}
+\end{table}

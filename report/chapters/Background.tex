@@ -1,0 +1,332 @@
+%*****************************************
+\chapter{Fundamentals}
+\label{ch:background}
+%*****************************************
+This chapter provides the foundational knowledge required to understand the technical contributions of this work. It begins by introducing the biological basis of neural computation, followed by a discussion of epilepsy and electroencephalography (EEG) in clinical diagnostics. Next, the chapter presents core concepts in machine learning, including gradient-based optimization and deep learning. The final sections introduce calibration and robustness, two critical properties that influence the reliability of neural networks, particularly in real-world time-series analysis such as EEG classification.
+
+\section{Neurons}
+Neurons are the fundamental units of the nervous system responsible for transmitting, processing, and integrating information across the brain and body. Nearly every aspect of human cognition, sensation, movement, and emotion is orchestrated by the brain’s intricate network of approximately 86 billion neurons~\cite{Lent2012}. Each neuron forms thousands of synaptic connections with other neurons, giving rise to a complex and highly interconnected network that supports both local processing and large-scale communication across brain regions~\cite{Kandel2013, Sporns2011}.
+
+Structurally, a typical neuron comprises three principal components: the soma (cell body), dendrites, and the axon (see Figure~\ref{fig:neurons}). The soma contains the nucleus and acts as the integrative center of the neuron. Dendrites extend from the soma and serve as receptive sites for incoming synaptic signals. The axon, often much longer than dendrites, transmits electrical impulses (action potentials) away from the soma toward other neurons, muscles, or glands~\cite{Purves2018}. The highly polarized structure of neurons enables unidirectional and efficient signal propagation, which is essential for coordinated neural computation.
+
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{350pt}
+ 	\import{gfx/}{neuron.pdf_tex} 	 	
+	\caption[Structure of a neuron]{Structure of a neuron. (Image source: Mauro Lanari\footnotemark. Accessed on 11th of May 2025.)}
+	\label{fig:neurons}
+\end{figure}
+\footnotetext{\url{https://de.wikipedia.org/wiki/Nervenzelle}}
+
+Functionally, neurons can be categorized by the type of signals they transmit. Excitatory neurons, which predominantly use the neurotransmitter glutamate, increase the likelihood of action potentials in downstream neurons. In contrast, inhibitory neurons release neurotransmitters such as γ-aminobutyric acid to suppress neuronal activity, thereby maintaining the balance necessary for stable and coordinated brain function~\cite{Kandel2013, Markram2004}. In addition to these, neuromodulatory neurons release chemicals like dopamine, serotonin, and acetylcholine~\cite{Kandel2013}. 
+%A typical chemical synapse is shown in Figure~\ref{fig:synapse}, where neurotransmitters released from the presynaptic terminal bind to receptors on the postsynaptic membrane, initiating downstream electrical responses.
+
+%\begin{figure}[htb]
+%	\centering
+%    \def\svgwidth{150pt}
+% 	\import{gfx/}{synapse.pdf_tex} 	 	
+%	\caption[Synaptic transmission between neurons]{Diagram of excitation %transmission at a chemical synapse from neuron A (presynaptic) to neuron B %(postsynaptic), showing vesicle release, receptor binding, and neurotransmitter %recycling~\cite{wikiSynapse}.}
+%	\label{fig:synapse}
+%\end{figure}
+
+Neuronal structure and organization vary considerably across brain regions, reflecting their specialized functions. For instance, the cerebral cortex is organized into six laminar layers, each containing distinct neuron types and projection patterns critical for higher-order processing such as perception, decision-making, and language~\cite{Mountcastle1997}. In the hippocampus, neurons such as CA1 pyramidal cells and dentate gyrus granule cells play central roles in memory encoding and spatial navigation~\cite{Andersen2006}. The cerebellum, essential for motor coordination and adaptive learning, contains uniquely structured Purkinje cells characterized by elaborate dendritic trees enabling extensive synaptic input integration~\cite{Palay1974}.
+
+One of the most critical features of neurons is their capacity for synaptic plasticity, the activity-dependent strengthening or weakening of synaptic connections. Synaptic plasticity underlies key cognitive functions such as learning and memory and is mediated by complex molecular mechanisms including long-term potentiation (LTP) and long-term depression (LTD)~\cite{Citri2008, Bliss1993}.
+
+Despite their remarkable adaptability, neurons are particularly vulnerable to damage, degeneration, and dysfunction. Neurodegenerative disorders such as Alzheimer’s disease, Parkinson’s disease, and Huntington’s disease are characterized by progressive neuronal loss and synaptic failure, leading to severe impairments in cognition and motor function~\cite{DeKosky2004, Surmeier2017}. Moreover, psychiatric conditions including schizophrenia, major depressive disorder, and autism spectrum disorders are increasingly understood to involve disruptions in neuronal signaling, connectivity, or developmental trajectories~\cite{Insel2010, Courchesne2011}.
+
+\section{Epilepsy}
+Epilepsy is a chronic neurological disorder affecting approximately 50 million people globally, making it one of the most common brain disorders worldwide~\cite{whoEpilepsy}. It is characterized by a persistent predisposition to generate epileptic seizures and by the neurobiological, cognitive, psychological, and social consequences of this condition. A seizure is defined as a transient occurrence of signs and/or symptoms resulting from abnormal, excessive, or synchronous neuronal activity in the brain~\cite{fisher2014}.
+
+Epileptic seizures can vary widely in manifestation depending on their origin and spread within the brain. Classification of seizures plays a crucial role in diagnosis and treatment planning. According to the International League Against Epilepsy (ILAE)~\cite{epilepsy2}: Seizures are classified into three major types based on the area of onset within the brain: focal onset, generalized onset, and unknown onset. 
+
+Focal onset seizures originate within a specific, localized region of one cerebral hemisphere. These are manifest as focal aware seizures, where consciousness is preserved, or as focal impaired awareness seizures, where the patient experiences reduced awareness~\cite{epilepsy2}. Clinically, focal motor seizures can involve jerking, stiffening, or automatisms, while non-motor variants may involve sensory, emotional, or cognitive phenomena~\cite{fisher2017}.
+
+In contrast, generalized onset seizures involve both cerebral hemispheres from the very beginning and result in immediate impairment of awareness~\cite{epilepsy2}. Sometimes, focal seizures evolve into generalized seizures, a phenomenon known as focal to bilateral tonic-clonic seizures. If the origin cannot be determined, e.g., due to a lack of clear symptoms or memory of onset, the seizure is classified as having an unknown onset~\cite{fisher2017}.
+
+Figure~\ref{fig:seizure_flow} illustrates the standardized seizure classification used in clinical and research settings. This framework allows neurologists to better identify epilepsy syndromes and tailor treatments to specific seizure patterns.
+
+\begin{figure}[htb]
+	\centering
+    \def\svgwidth{420pt}
+    \fontsize{9pt}{9pt}
+ 	\import{gfx/}{ilae.pdf_tex} 	 	
+	\caption[ILAE Seizure Classification Flowchart]{ILAE classification of seizure types (basic version) based on onset, awareness, and motor features~\cite{epilepsyDiagram}.}
+	\label{fig:seizure_flow}
+\end{figure}
+
+\section{Electroencephalography (EEG)}
+Electroencephalography (EEG) is a non-invasive neurophysiological method used to record the brain’s spontaneous electrical activity over time. This activity is generated by postsynaptic potentials of neurons, particularly from cortical pyramidal cells, and is measured using electrodes placed on the scalp~\cite{niedermeyer2005}.
+
+EEG signals are recorded as voltage differences between electrode pairs placed on the scalp, typically measured relative to a reference. These differences reflect the summed postsynaptic potentials of large populations of cortical neurons, as individual neurons generate weak signals that are not detectable at the scalp level~\cite{niedermeyer2005}. To ensure consistent and anatomically informed electrode placement, the international 10–20 system is widely adopted for surface EEG. This system positions electrodes at intervals of 10\% or 20\% of the skull’s surface dimensions relative to anatomical landmarks~\cite{jurcak2007}, with each site labeled according to the underlying brain region (e.g., F for frontal, T for temporal). A schematic overview of this layout is shown in Figure~\ref{fig:electrodemap}.
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{320pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{channel10.pdf_tex} 	 	
+	\caption[EEG 10-20 electrode map]{Exemplary layout of scalp electrodes based on the 10-20 system.}
+	\label{fig:electrodemap}
+\end{figure}
+
+The electrical potential can be measured between a fixed reference and an active electrode (unipolar montage), or between two active electrodes (bipolar montage), depending on the acquisition setup. Due to the attenuating effects of the skull and scalp, surface EEG primarily reflects neural activity from superficial cortical regions and is less sensitive to deep brain structures. Despite these limitations, the spatial distribution of electrodes enables monitoring of regional dynamics across the cortex, which is critical for detecting pathological brain activity such as epileptic seizures.
+
+An example of raw EEG signals from six bipolar channels over a 20-second interval is illustrated in Figure~\ref{fig:multi_channel}. These signals demonstrate the spatial variability of neural activity across different regions of the brain, as captured by the respective electrode pairs.
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{420pt}
+ 	\import{gfx/}{eeg_plot.pdf_tex} 	 	
+	\caption[Exemplary 20 seconds of six different EEG channels]{Exemplary 20-second interval of EEG recordings from six bipolar channels.}
+	\label{fig:multi_channel}
+\end{figure}
+
+EEG rhythms are classified by their frequency bands: delta (0.5–4 Hz), theta (4–8 Hz), alpha (8-13 Hz), beta (13–30 Hz), and gamma (>30 Hz)~\cite{niedermeyer2005}. These rhythms correlate with different physiological and pathological brain states. For instance, delta waves dominate during deep sleep, while alpha waves appear when a person is awake but relaxed~\cite{niedermeyer2005}.
+
+During a seizure, EEG signals often exhibit increased activity, which typically manifests as higher amplitude, altered frequency patterns, or sudden rhythmic discharges~\cite{seizuresurvey}. These patterns are critical for identifying seizure onset and distinguishing it from background activity.
+
+Figure~\ref{fig:seizure_interval} presents a 50-second recording from the FP1–F7 channel where the seizure onset is clearly visible in the initial segment, marked by a sharp increase in signal amplitude and frequency content.
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{400pt}
+ 	\import{gfx/}{seizure_interval.pdf_tex} 	 	
+	\caption[EEG channel FP1–F7 around seizure onset]{Segment of EEG signal recorded from channel FP1–F7, showing a 50-second interval relative to seizure onset. The seizure activity (in red) is characterized by a rapid increase in amplitude and higher frequency fluctuations compared to the surrounding normal activity (in blue).}
+	\label{fig:seizure_interval}
+\end{figure}
+
+\section{Machine Learning}
+Machine learning (ML) is a subfield of artificial intelligence concerned with the development of algorithms and statistical models that enable systems to learn patterns from data and make predictions or decisions without being explicitly programmed~\cite{mitchell1997machine}. In a formal sense, machine learning can be viewed as the process of learning a function $f: \mathcal{X} \rightarrow \mathcal{Y}$ that maps input features $x \in \mathcal{X}$ to outputs $y \in \mathcal{Y}$, based on observed data $(x_i, y_i)_{i=1}^n$ drawn from a joint distribution $P(X, Y)$~\cite{bishop2006pattern}.
+
+Machine learning models can be broadly categorized into three types based on their objective and data availability:
+
+\begin{itemize}
+\item Supervised learning: The model learns a mapping from inputs to known outputs using labeled data. The objective is to minimize a loss function $\mathcal{L}(f(x), y)$ that quantifies the discrepancy between predicted and actual outputs. Applications include classification and regression tasks~\cite{hastie2009elements}.
+
+\item Unsupervised learning: The model receives only input data without labels and aims to uncover the underlying structure, such as clusters or latent representations, within the data. Common approaches include clustering, dimensionality reduction, and generative modeling~\cite{bishop2006pattern}.
+
+\item Reinforcement learning: The model interacts with an environment and learns a policy $\pi(a|s)$ that maximizes cumulative reward over time by receiving feedback in the form of reward signals~\cite{sutton2018reinforcement}.
+\end{itemize}
+
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{350pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{supervise.pdf_tex} 	 	
+	\caption[Illustration of supervised learning]{Illustration of supervised learning. The model is trained on labeled data.}
+	\label{fig:supervise}
+\end{figure}
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{350pt}
+    \fontsize{8pt}{8pt}
+ 	\import{gfx/}{unsupervise.pdf_tex} 	 	
+	\caption[Illustration of unsupervised learning]{Illustration of unsupervised learning. The model operates on unlabeled data.}
+	\label{fig:unsupervise}
+\end{figure}
+
+Figures~\ref{fig:supervise} and~\ref{fig:unsupervise} provide intuitive visualizations of supervised and unsupervised learning paradigms, respectively. These examples highlight the fundamental difference in how information is used during training: while supervised models rely on labeled data to guide learning, unsupervised models must discover structure purely from the input space.
+
+Another important distinction is between \textit{discriminative} and \textit{generative} models~\cite{Murphy}:
+
+\begin{itemize}
+\item Discriminative models learn the conditional probability $P(y|x)$ or a direct decision boundary between classes. They focus solely on prediction accuracy and include models such as logistic regression and support vector machines.
+
+\item Generative models aim to model the joint distribution $P(x, y)$ and can generate new samples. They can be used both for prediction and for synthesizing data. Examples include Naive Bayes and Gaussian Mixture Models (GMMs)~\cite{bishop2006pattern}.
+\end{itemize}
+\subsection{Gradient Descent}
+Gradient descent is a first-order iterative optimization algorithm widely used to minimize objective functions in machine learning, especially empirical loss functions over data distributions~\cite{gd}. Given a dataset $\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N$, a predictive model $g_{\theta}(x)$ with learnable parameters $\theta \in \Theta$, and a loss function $\mathcal{L}(g_{\theta}(x), y)$, the goal is to minimize the empirical risk~\cite{bottou2012stochastic}:
+
+\begin{equation}
+R_{\mathcal{L}}(g_{\theta}) = \frac{1}{N} \sum_{i=1}^{N} \mathcal{L}(g_{\theta}(x_i), y_i)
+\end{equation}
+
+where $R_{\mathcal{L}}(g_{\theta})$ represents the average discrepancy between predictions and ground truth values.
+
+The optimal parameters $\hat{\theta}$ are estimated by solving the minimization problem~\cite{ruder2016overview}:
+
+\begin{equation}
+\hat{\theta} = \arg \min_{\theta \in \Theta} R_{\mathcal{L}}(g_{\theta})
+\end{equation}
+
+Under standard regularity conditions (e.g., if $R_{\mathcal{L}}(g_{\theta})$ is twice continuously differentiable and the Hessian $\text{Hess}_{\theta}(R_{\mathcal{L}})$ is positive definite), $\hat{\theta}$ is guaranteed to be a local minimizer.
+
+Gradient descent updates the parameters in the direction of the negative gradient of the loss function~\cite{lee2016gradient}:
+
+\begin{equation}
+\theta^{(k+1)} = \theta^{(k)} - \eta \nabla_{\theta} R_{\mathcal{L}}(g_{\theta})\big|_{\theta^{(k)}}
+\end{equation}
+
+where $\eta > 0$ is the learning rate, a hyperparameter controlling the step size. Choosing $\eta$ appropriately is critical: if it is too large, the updates may overshoot; if too small, convergence becomes slow.
+\begin{figure}[h!]
+	\centering
+    \def\svgwidth{320pt}
+ 	\import{gfx/}{gradient.pdf_tex} 	 	
+	\caption[Gradient Descent Trajectory]{Visualization of gradient descent optimization on a convex quadratic cost function. The arrows represent the iterative updates of the parameters $(\theta_0, \theta_1)$, moving in the direction of steepest descent.}
+    \label{fig:gd_quadratic}
+\end{figure}
+
+In convex optimization problems, gradient descent converges to a global minimum, provided a proper learning rate is used~\cite{bottou2010large}. However, many modern machine learning models involve non-convex loss surfaces (e.g., in neural networks), where multiple local minima, saddle points, and flat regions exist~\cite{bottou2012stochastic}. In such cases, convergence to the global optimum cannot be guaranteed, but practical success is often achieved through careful tuning, initialization, and the use of stochastic variants~\cite{bottou2012stochastic}.
+
+To address the computational challenges of large datasets, mini-batch gradient descent is often employed. Instead of computing gradients over the entire dataset, it uses small, randomly sampled subsets (batches), reducing memory consumption and introducing noise that can help escape shallow local minima~\cite{gd}.
+
+\begin{equation}
+\theta^{(k+1)} = \theta^{(k)} - \eta \nabla_{\theta} R^{(B)}_{\mathcal{L}}(g_{\theta})
+\end{equation}
+
+where $R^{(B)}_{\mathcal{L}}$ denotes the empirical risk computed on a mini-batch $B \subset \mathcal{D}$.
+\subsection{Deep Learning}
+Deep learning is a subfield of machine learning that studies models composed of multiple layers of nonlinear processing units, typically known as artificial neural networks (ANNs)~\cite{lecun2015deep}. When these networks contain two or more hidden layers, they are referred to as deep neural networks (DNNs)~\cite{lecun2015deep}.
+
+An artificial neural network (ANN) is a computational graph consisting of interconnected units called neurons, organized into layers~\cite{lecun2015deep}. A typical feedforward neural network comprises an input layer, one or more hidden layers, and an output layer, as illustrated in Figure~\ref{fig:NN}.
+\begin{figure}[h!]
+	\centering
+        \def\svgwidth{330pt}
+ 	\import{gfx/}{neuralNetwork.pdf_tex} 	  	 	
+	\caption[A simple feedforward neural network with one hidden layer]{A simple feedforward neural network with one hidden layer.}
+	\label{fig:NN}
+\end{figure}
+Each neuron performs a weighted summation of its inputs and applies a nonlinear activation function~\cite{goodfellow2016deep}:
+\begin{equation}
+a^{(l)} = \phi \left(W^{(l)} a^{(l-1)} + b^{(l)} \right)
+\end{equation}
+
+Here, $a^{(l)} \in \mathbb{R}^{n_l}$ represents the activations in the $l$-th layer, $W^{(l)} \in \mathbb{R}^{n_l \times n_{l-1}}$ is the weight matrix, $b^{(l)}$ is the bias vector, and $\phi$ is a non-linear function such as ReLU, sigmoid, or tanh. The network transforms an input $x \in \mathbb{R}^d$ through successive layers until a final prediction is produced.
+
+\subsubsection{Training Neural Networks}
+Training involves adjusting the weights $W^{(l)}$ and biases $b^{(l)}$ to minimize a predefined \textit{loss function}, typically via gradient-based optimization. The most common algorithm is Stochastic Gradient Descent (SGD) or its variants (e.g., Adam, RMSProp), which update parameters using the gradient of the loss with respect to each weight~\cite{bottou2012stochastic}:
+
+\begin{equation}
+W^{(l)} \leftarrow W^{(l+1)} - \eta \frac{\partial \mathcal{L}}{\partial W^{(l)}}
+\end{equation}
+
+Where $\eta$ is the learning rate and $\mathcal{L}$ the loss (e.g., cross-entropy for classification tasks). The gradient is computed efficiently via backpropagation, a recursive application of the chain rule from the output layer to the input layer~\cite{rumelhart1986learning}.
+
+\subsubsection{Types of Neural Network Architectures}
+The architecture of a neural network defines how data flows through layers of interconnected units to produce a prediction. Different architectural paradigms have been proposed to address specific data structures and learning tasks, each offering unique inductive biases and computational advantages.
+\subsubsection{1. Fully Connected Networks (FCNs)}
+Fully connected networks, also known as multilayer perceptrons (MLPs), are the most basic form of feedforward neural networks. In an FCN, each neuron in a layer is connected to every neuron in the preceding layer. Given an input vector $x \in \mathbb{R}^d$, the output of the first hidden layer is computed as~\cite{dl}:
+
+\begin{equation}
+a^{(1)} = \phi(W^{(1)}x + b^{(1)})
+\end{equation}
+
+Where $W^{(1)} \in \mathbb{R}^{n \times d}$ is the weight matrix, $b^{(1)}$ is a bias, and $\phi(\cdot)$ is a non-linear activation function. This process is repeated across layers to map the input to the final output.
+
+Although FCNs are universal approximators~\cite{hornik1989multilayer}, they suffer from scalability issues when input dimensions are high, as the number of parameters grows quadratically with layer width. Moreover, they do not exploit local structures in data (e.g., temporal locality in EEG), making them suboptimal for time-series and spatially correlated inputs.
+
+\subsubsection{2. Convolutional Neural Networks (CNNs)}
+CNNs are specialized neural networks designed to capture \textit{local correlations} by applying learnable convolutional kernels across structured input spaces. For a two-dimensional input \( a^{(l-1)} \in \mathbb{R}^{H \times W} \) (e.g., an EEG spectrogram), the output of a convolutional layer at position \( (i, j) \) is computed as~\cite{dl}:
+
+\begin{equation}
+a_{i,j}^{(l)} = \phi \left( \sum_{m=0}^{M-1} \sum_{n=0}^{N-1} w_{m,n}^{(l)} \cdot a_{i+m,j+n}^{(l-1)} + b^{(l)} \right)
+\label{eq:conv2d}
+\end{equation}
+
+Here, \( w_{m,n}^{(l)} \) denotes the kernel weight at position \( (m,n) \), \( \phi(\cdot) \) is a non-linear activation function (e.g., ReLU), and \( b^{(l)} \) is a bias term. The indices \( M \) and \( N \) represent the height and width of the kernel. This formulation assumes unit stride and zero padding unless otherwise specified.
+
+In EEG signal processing, CNNs have been successfully applied to raw time-series data and to time-frequency representations like spectrograms~\cite{lawhern2018eegnet}. The local connectivity of CNNs enables them to learn frequency-band-specific and temporally localized patterns crucial for tasks such as seizure detection or mental state classification~\cite{lawhern2018eegnet}.
+\begin{figure}[h!]
+	\centering
+        \def\svgwidth{400pt}
+ 	\import{gfx/}{cnn.pdf_tex} 	  	 	
+	\caption[Visual representation of a 2D convolution operation]{Visual representation of a 2D convolution operation. A $2 \times 2$ kernel slides over a zero-padded $5 \times 5$ input matrix to produce a $4 \times 4$ output feature map. The highlighted region shows the first receptive field used to compute the top-left output value.}
+	\label{fig:CNN}
+\end{figure}
+\subsubsection{3. Recurrent Neural Networks (RNNs)}
+RNNs are designed for sequential data, where temporal dependencies are crucial. At each time step $t$, the hidden state $h_t$ is updated using the input $x_t$ and the previous hidden state $h_{t-1}$~\cite{roy2019chrononet}:
+
+\begin{align}
+h_t &= \phi(W_{xh}x_t + W_{hh}h_{t-1} + b_h) \\
+y_t &= \psi(W_{hy}h_t + b_y)
+\end{align}
+
+Here, $W_{xh}, W_{hh},$ and $W_{hy}$ are learnable weight matrices, and $\phi$, $\psi$ are activation functions (e.g., tanh, softmax). Unlike FCNs or CNNs, RNNs retain a hidden memory across time, making them suited for tasks involving temporal context.
+
+However, standard RNNs suffer from anishing and exploding gradient problems, limiting their ability to capture long-range dependencies. To address this, gated variants such as LSTMs and GRUs were introduced~\cite{hochreiter1997long, cho2014learning}, which use gating mechanisms to control information flow through time. In EEG classification, RNNs have been explored for capturing long-term brain signal dependencies, but their sequential nature limits parallelism and efficiency.
+
+\subsubsection{4. Transformer-Based Architectures}
+Transformer models were originally introduced for sequence modeling tasks in natural language processing~\cite{vaswani2017attention}, but their architecture has since been generalized to a variety of time-dependent domains, including multivariate time-series and biomedical signals. A key innovation of transformers is the use of \textit{self-attention mechanisms} to efficiently model global dependencies, overcoming the limitations of recurrent and convolutional architectures in capturing long-range interactions.
+
+Let $x \in \mathbb{R}^{N \times D}$ denote the input sequence, where $N$ is the sequence length (e.g., number of EEG time steps) and $D$ is the feature dimension (e.g., number of channels or embeddings). A naive approach would be to flatten $x$ into a vector of size $N \cdot D$ and apply a fully connected layer. However, this leads to a parameter cost of $\mathcal{O}(N \cdot D \cdot M)$ for an output size $M$, which is prohibitively expensive for long sequences. Alternatively, using 1D convolutions requires only $\mathcal{O}(N \cdot M)$ parameters but lacks the capacity to model arbitrary long-range dependencies.
+
+To address these challenges, the transformer architecture introduces \textit{multi-head self-attention}, which decomposes the input into \textit{queries} ($Q$), \textit{keys} ($K$), and \textit{values} ($V$) using learned linear projections~\cite{vaswani2017attention}. These are computed as:
+
+\[
+Q = xW^Q, \quad K = xW^K, \quad V = xW^V
+\]
+
+where $W^Q, W^K, W^V \in \mathbb{R}^{D \times d}$ are learnable projection matrices, and $d$ is the attention dimension. The core operation, known as \textit{scaled dot-product attention}, is defined as~\cite{vaswani2017attention}:
+
+\begin{equation}
+\text{Attention}(Q, K, V) = \text{softmax} \left( \frac{QK^\top}{\sqrt{d}} \right) V
+\label{eq:attention}
+\end{equation}
+
+The matrix $QK^\top \in \mathbb{R}^{N \times N}$ computes pairwise similarity between input positions, and the softmax function normalizes these scores into a probability distribution. This allows each token in the sequence to attend to every other token, with learned relevance weights.
+
+According to Vaswani et al.~\cite{vaswani2017attention}, in multi-head attention (shown in Figure~\ref{fig:multihead}), this mechanism is replicated $h$ times with different learned projections, allowing the model to jointly attend to information from different representation subspaces. The outputs of the $h$ heads are concatenated and projected through a final linear layer. Despite the quadratic complexity in sequence length ($\mathcal{O}(N^2)$), the overall parameter cost scales only with $\mathcal{O}(d^2)$, making it tractable even for long signals when combined with efficient attention variants.
+
+\begin{figure}[h!]
+	\centering
+        \def\svgwidth{400pt}
+ 	\import{gfx/}{mutihead.pdf_tex} 	  	 	
+	\caption[Visual representation of a 2D convolution operation]{Visual representation single attention head (left) and multi-head attention (right) consists of several attention layers~\cite{vaswani2017attention}.}
+	\label{fig:multihead}
+\end{figure}
+
+\section{Calibration of Neural Networks}
+In classification tasks, neural networks produce not only discrete labels but also confidence scores, typically derived from the softmax output layer. Ideally, these scores should reflect the true probability of correctness, a property known as \textit{calibration}.
+
+Formally, a classifier is perfectly calibrated if~\cite{guo2017calibration}:
+\begin{equation}
+\mathbb{P}(Y = \hat{Y} \mid \hat{P} = p) = p, \quad \text{for all } p \in [0, 1]
+\end{equation}
+where $\hat{Y}$ is the predicted label, $\hat{P}$ the predicted confidence, and $Y$ the true label. For instance, if a model predicts 80\% confidence for a subset of samples, approximately 80\% of those should be correctly classified.
+
+To quantify calibration, a widely adopted metric is the \textit{Expected Calibration Error (ECE)}, which partitions the confidence interval into $M$ bins and computes~\cite{ece}:
+\begin{equation}
+\text{ECE} = \sum_{m=1}^{M} \frac{|B_m|}{n} \left| \text{acc}(B_m) - \text{conf}(B_m) \right|
+\end{equation}
+where $B_m$ is the set of predictions in bin $m$, $\text{acc}(B_m)$ the empirical accuracy, and $\text{conf}(B_m)$ the average confidence~\cite{naeini2015obtaining, guo2017calibration}. A rigorous definition and implementation of ECE is provided in Chapter~\ref{ch:methodology}.
+
+Recent work has shown that modern neural networks, particularly those with high capacity and limited regularization, often produce overconfident predictions and are thus poorly calibrated~\cite{guo2017calibration}. This degradation in calibration is frequently amplified by optimization techniques such as batch normalization and weight decay.
+
+\subsubsection{Causes of Miscalibration}
+The misalignment between predicted confidence and true correctness likelihood arises from several systemic factors.
+
+First, overparameterization and extended training cycles tend to yield sharper softmax outputs, resulting in excessive confidence even on incorrect predictions~\cite{guo2017calibration}. Standard training objectives such as cross-entropy focus solely on minimizing prediction loss, without directly addressing confidence calibration.
+
+Second, architectural choices, particularly batch normalization and ReLU activations, while effective for convergence, have been observed to amplify miscalibration, especially under distributional shift~\cite{ovadia2019can}.
+
+Third, data-related factors such as class imbalance or label noise introduce skewed confidence scores, disproportionately affecting underrepresented or ambiguous instances~\cite{thulasidasan2019mixup}.
+
+Finally, the absence of uncertainty-aware methods, such as Bayesian inference, deep ensembles, or stochastic regularization, restricts the model's ability to represent epistemic uncertainty, further impairing calibration~\cite{lakshminarayanan2017simple}.
+
+\subsubsection{Post-Hoc Calibration}
+A simple and effective post-processing method is \textit{temperature scaling}, which rescales logits using a learned scalar parameter $T > 0$~\cite{calibration1}:
+\begin{equation}
+P(\hat{y}) = \frac{\exp(z / T)}{\sum_j \exp(z_j / T)}  
+\end{equation}
+The temperature parameter $T$ is optimized on a validation set to minimize the negative log-likelihood (NLL). Larger values of $T$ soften the softmax distribution, reducing confidence without altering the predicted class~\cite{guo2017calibration}.
+
+Due to its simplicity and empirical effectiveness, temperature scaling is widely used. However, it only modifies the model’s output at test time and does not address the underlying factors causing miscalibration during training.
+
+\section{Robustness}
+Robustness describes a model's ability to sustain predictive performance when exposed to inputs that differ from the training distribution. This capability is crucial in real-world applications, where variations such as noise, domain shifts, or hardware inconsistencies are common. 
+
+A prominent benchmark for assessing corruption robustness is \textit{ImageNet-C}~\cite{hendrycks2019benchmarking}, which introduces 15 algorithmically generated perturbations applied to the ImageNet validation set. These include additive noise (e.g., Gaussian, impulse), blur (e.g., defocus, motion), weather artifacts (e.g., fog, snow), and digital distortions (e.g., JPEG compression). Each corruption is evaluated at five severity levels, enabling fine-grained analysis of model resilience.
+
+Despite high clean accuracy, many state-of-the-art models experience significant performance degradation even under mild corruptions~\cite{hendrycks2019benchmarking}. This highlights a critical limitation of conventional generalization metrics. Furthermore, some models optimized for clean accuracy exhibit disproportionately poor robustness, revealing a robustness–accuracy trade-off not captured by standard evaluation.
+
+An additional concern is the reliability of confidence estimates under shift. As shown by Ovadia et al.~\cite{ovadia2019can}, expected calibration error (ECE) often increases more rapidly than the decline in accuracy. Figure~\ref{fig:robust_calibration} illustrates this phenomenon: as corruption severity rises, model accuracy drops while ECE rises, indicating degradation in both performance and calibration.
+
+\begin{figure}[h!]
+	\centering
+        \def\svgwidth{300pt}
+ 	\import{gfx/}{robust_calibration.pdf_tex} 	  	 	
+	\caption[Robust Calibration Across Corruption Severity]{Robust Calibration Across Corruption Severity. As the corruption severity increases, model accuracy drops (blue) and expected calibration error (ECE) rises (red), indicating a decline in both predictive performance and confidence reliability.}
+	\label{fig:robust_calibration}
+\end{figure}
+
+This dual degradation has motivated the development of methods targeting \textit{robust calibration}, wherein models are designed to maintain both high accuracy and reliable uncertainty estimates under distribution shift~\cite{ashukha2020pitfalls}.
